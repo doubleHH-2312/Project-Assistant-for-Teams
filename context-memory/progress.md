@@ -17,7 +17,8 @@ Statuses: `READY`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 | INT-002 Internal LLM adapter | BLOCKED | Codex | Deterministic mock and schema rejection tests pass | Need endpoint/auth/model/data-policy contract |
 | OPS-001 Containers/CI/IaC/runbooks | IN_PROGRESS | Codex | API/worker/web images build; Compose health and proxy smoke pass | Add GitHub Actions and Terraform baseline |
 | QA-001 Full review and verification | IN_PROGRESS | Codex | Fresh: 19 backend + 1 web test pass; lint/type/build/Compose/manifest/live health pass | Add Playwright, accessibility and security review |
-| ARC-002 Teams bot/action platform design | IN_PROGRESS | Codex | Written spec self-reviewed: no placeholders; corrected Teams command-menu/privacy semantics; D-013 explicitly supersedes D-002 for MVP | User review written spec |
+| ARC-002 Teams bot/action platform design | DONE | Codex | User approved written spec; added OpenAI-compatible GPT-first/company-LLM adapter decision D-014 | Write implementation plan |
+| PLN-001 Teams bot/action implementation plan | DONE | Codex | 11-task TDD plan self-reviewed for spec coverage, type consistency, review risks and deployment gates | User confirmation, then Task 1 |
 | BOT-001 Extensible Teams action platform | READY | Unassigned | Pending approved spec/plan | After ARC-002 |
 | RBAC-001 Team-scoped memberships | READY | Unassigned | Pending approved spec/plan | First implementation increment |
 | AUD-001 Invocation and status-event audit | READY | Unassigned | Pending approved spec/plan | After RBAC-001 |

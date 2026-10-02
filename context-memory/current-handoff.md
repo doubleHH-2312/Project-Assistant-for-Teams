@@ -7,8 +7,11 @@
   append-only audit/status history, multi-team reporting, and Vercel/Supabase demo
   deployment is now captured in
   `docs/superpowers/specs/2026-10-02-teams-bot-action-platform-design.md`.
-- The written spec has been self-reviewed and is awaiting the user's file-level
-  approval before an implementation plan or application-code change.
+- The user approved the written spec. The complete 11-task TDD implementation plan is
+  `docs/superpowers/plans/2026-10-02-teams-bot-action-platform.md` and is awaiting the
+  user's final plan review before application-code changes.
+- D-014 records the GPT-first OpenAI-compatible adapter; switching to the company LLM
+  is configuration-only after its endpoint passes the shared contract tests.
 - A runnable local web vertical slice is available at `http://localhost:5173` when the
   Compose stack is running. The current stack was built, started, and seeded.
 - API, PostgreSQL, worker, and web containers are running; API reports healthy.
@@ -32,15 +35,17 @@
 
 ## Next action
 
-Ask the user to review and approve the written Teams bot/action platform spec. Then
-write the task-by-task TDD implementation plan, starting with Team Membership/RBAC,
-followed by append-only audit/status events and the Action Registry.
+Ask the user to review and approve the implementation plan. Then execute natively in
+the current checkout, starting with Task 1 Team Membership schema/migration under the
+RED -> GREEN -> REFACTOR workflow.
 
 ## External blockers
 
 - Teams/Entra: public HTTPS hostname, app registrations, redirect/resource values,
   tenant policy/consent, bot registration, and test users.
-- Internal LLM: endpoint/auth/model/schema/limits/data-policy contract.
+- GPT: API key, approved model and data policy are needed only for a real-provider smoke.
+- Company LLM: base URL, auth, model and structured-output capability are still needed
+  for its contract smoke; implementation targets the shared OpenAI-compatible shape.
 - Vercel/Supabase: project ownership, environment configuration, public domain and
   hosting-plan suitability must be supplied before a real deployment smoke test.
 - AWS is deferred as a future scale-up path rather than an active MVP gate.

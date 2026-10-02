@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-02
 
-**Status:** Proposed for implementation
+**Status:** Approved for implementation
 **Product:** Project Assistant Tool MVP
 
 ## 1. Intent and success criteria
@@ -124,6 +124,12 @@ Teams Activity Adapter or Web Route
 The Action Registry is a deep module for command discovery and dispatch. It does not
 contain business rules. Teams handlers and web controllers remain thin and call the
 same use cases.
+
+The LLM boundary exposes one transport-neutral `LLMProvider`. A deterministic mock is
+used in local tests and CI. Real evaluation first uses GPT through an
+`OpenAICompatibleLLMProvider`; the company model later uses the same adapter by
+changing its base URL, API key, model name, and declared capability mode. Domain and
+reporting services do not branch on the vendor name.
 
 ### 4.2 Action interfaces
 
@@ -347,6 +353,8 @@ web use the same SPA and Entra identity adapter when the real integration gate o
 - Missing Team binding returns a setup card only to an eligible PM.
 - Invalid or stale form payloads return field errors and do not partially write data.
 - LLM timeout or malformed output leaves evidence unchanged and creates no report.
+- OpenAI-compatible responses are validated locally against the active report JSON
+  Schema even when the remote endpoint advertises structured-output support.
 - Missing Teams installation/conversation data records delivery failure without
   claiming success.
 - Structured logs include correlation and invocation IDs and redact secrets and full
@@ -386,6 +394,12 @@ clean-install, OpenAPI drift, production web build, secret scan, and preview smo
 Production deployment runs Alembic before traffic smoke. Required secrets live only in
 Vercel/Supabase environment configuration.
 
+The hosted LLM profile uses `LLM_PROVIDER=openai_compatible` with secret
+`LLM_API_KEY`, plus `LLM_BASE_URL`, `LLM_MODEL`, and an explicit structured-output
+capability setting. GPT is the first real test target. Moving to the company endpoint
+must be an environment-only change after its compatibility contract passes the same
+adapter tests.
+
 ## 12. Testing strategy
 
 - Registry tests: duplicate names/aliases, unknown commands, context restrictions.
@@ -397,6 +411,8 @@ Vercel/Supabase environment configuration.
 - Timeline tests: block start, resolution, correction/supersession, exact dates.
 - Weekly tests: Project grouping, optional sections, confirmed-only aggregation,
   missing contributors, immutable confirmation, evidence links, multi-team grouping.
+- LLM adapter tests: OpenAI-compatible request shape, GPT/custom base URLs, local JSON
+  Schema validation, malformed JSON, timeout, bounded retry, and secret redaction.
 - Teams tests: installation binding, personal/group/team contexts, private result,
   card execute/submit compatibility, publish deduplication.
 - Web tests: every role, loading/empty/error/forbidden states, responsive/accessibility.

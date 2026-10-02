@@ -105,3 +105,14 @@ Append new decisions. Do not rewrite existing records; add a superseding record.
   a low-cost/free demo profile.
 - Impact: Precise scheduled jobs are disabled in the free profile; serverless database
   pooling and hosting-plan usage constraints become explicit adapters/gates.
+
+## 2026-10-02 — D-014 OpenAI-compatible LLM adapter
+
+- Decision: Test real generation with GPT first, using one OpenAI-compatible adapter
+  configured by base URL, API key, model and structured-output capability. Reuse that
+  adapter for the company LLM when its compatibility contract is available.
+- Reason: The company endpoint follows the GPT endpoint shape, so vendor-specific
+  business logic would add duplication without improving the domain boundary.
+- Impact: Mock remains deterministic for local/CI; every real response is validated
+  locally against the report JSON Schema; switching provider is an environment-only
+  operation once contract tests pass.
