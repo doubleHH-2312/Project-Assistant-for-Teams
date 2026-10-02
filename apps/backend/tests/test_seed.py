@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from project_assistant.core.database import Base
 from project_assistant.modules.daily_reports.models import DailyReport, WorkStatus
+from project_assistant.modules.projects.models import Project
 from project_assistant.modules.teams.models import Team
 from project_assistant.modules.users.models import User
 from project_assistant.modules.weekly_reports.models import WeeklyReport, WeeklyReportStatus
@@ -25,9 +26,10 @@ def test_seed_is_idempotent_and_contains_demo_scenarios() -> None:
         seed_database(session, reference_date=date(2026, 10, 1))
         seed_database(session, reference_date=date(2026, 10, 1))
 
-        assert session.scalar(select(func.count()).select_from(Team)) == 1
-        assert session.scalar(select(func.count()).select_from(User)) == 7
-        assert session.scalar(select(func.count()).select_from(WorkItem)) == 20
+        assert session.scalar(select(func.count()).select_from(Team)) == 2
+        assert session.scalar(select(func.count()).select_from(Project)) == 4
+        assert session.scalar(select(func.count()).select_from(User)) >= 8
+        assert session.scalar(select(func.count()).select_from(WorkItem)) >= 20
         assert session.scalar(select(func.count()).select_from(DailyReport)) >= 30
         assert (
             session.scalar(
@@ -45,4 +47,10 @@ def test_seed_is_idempotent_and_contains_demo_scenarios() -> None:
             )
             >= 1
         )
+        membership_rows = session.execute(
+            select(
+                func.count(),
+            ).select_from(Base.metadata.tables["team_memberships"])
+        ).scalar_one()
+        assert membership_rows >= 10
     engine.dispose()

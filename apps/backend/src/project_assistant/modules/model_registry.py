@@ -1,6 +1,7 @@
 """Import all ORM models so metadata discovery is deterministic."""
 
 from project_assistant.modules.daily_reports.models import DailyReport
+from project_assistant.modules.memberships.models import TeamMembership
 from project_assistant.modules.notifications.models import NotificationLog, TeamsConversation
 from project_assistant.modules.projects.models import Project
 from project_assistant.modules.teams.models import Team
@@ -11,6 +12,7 @@ from project_assistant.modules.work_items.models import WorkItem
 
 __all__ = [
     "DailyReport",
+    "TeamMembership",
     "NotificationLog",
     "Project",
     "ReportTemplate",

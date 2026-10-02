@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from project_assistant.core.config import get_settings
 from project_assistant.modules.daily_reports.models import DailyReport, WorkStatus
+from project_assistant.modules.memberships.models import TeamMembership, TeamRole
 from project_assistant.modules.model_registry import (  # noqa: F401
     NotificationLog,
     Project,
@@ -33,15 +34,25 @@ def seed_database(session: Session, reference_date: date | None = None) -> None:
         return
 
     today = reference_date or date.today()
+    tenant_id = "tenant-demo"
     team = Team(
         id="team-ops",
+        tenant_id=tenant_id,
         name="Mock Ops Team",
+        timezone="Asia/Ho_Chi_Minh",
+        weekly_report_day=4,
+    )
+    platform_team = Team(
+        id="team-platform",
+        tenant_id=tenant_id,
+        name="Mock Platform Team",
         timezone="Asia/Ho_Chi_Minh",
         weekly_report_day=4,
     )
     users = [
         User(
             id="user-lead",
+            tenant_id=tenant_id,
             external_user_id="entra-lead",
             name="Lan Lead",
             email="lead@example.test",
@@ -50,6 +61,7 @@ def seed_database(session: Session, reference_date: date | None = None) -> None:
         ),
         User(
             id="user-pm",
+            tenant_id=tenant_id,
             external_user_id="entra-pm",
             name="Phuong PM",
             email="pm@example.test",
@@ -60,6 +72,7 @@ def seed_database(session: Session, reference_date: date | None = None) -> None:
     members = [
         User(
             id=f"user-member-{index}",
+            tenant_id=tenant_id,
             external_user_id=f"entra-member-{index}",
             name=f"Member {index}",
             email=f"member{index}@example.test",
@@ -69,6 +82,63 @@ def seed_database(session: Session, reference_date: date | None = None) -> None:
         for index in range(1, 6)
     ]
     users.extend(members)
+    platform_member = User(
+        id="user-member-6",
+        tenant_id=tenant_id,
+        external_user_id="entra-member-6",
+        name="Member 6",
+        email="member6@example.test",
+        role=UserRole.MEMBER,
+        team_id=platform_team.id,
+    )
+    users.append(platform_member)
+    memberships = [
+        TeamMembership(
+            id="membership-lead-ops",
+            user_id="user-lead",
+            team_id=team.id,
+            role=TeamRole.TECH_LEAD,
+        ),
+        TeamMembership(
+            id="membership-lead-platform",
+            user_id="user-lead",
+            team_id=platform_team.id,
+            role=TeamRole.TECH_LEAD,
+        ),
+        TeamMembership(
+            id="membership-pm-ops",
+            user_id="user-pm",
+            team_id=team.id,
+            role=TeamRole.PM,
+        ),
+        TeamMembership(
+            id="membership-pm-platform",
+            user_id="user-pm",
+            team_id=platform_team.id,
+            role=TeamRole.PM,
+        ),
+        *[
+            TeamMembership(
+                id=f"membership-member-{index}-ops",
+                user_id=f"user-member-{index}",
+                team_id=team.id,
+                role=TeamRole.MEMBER,
+            )
+            for index in range(1, 6)
+        ],
+        TeamMembership(
+            id="membership-member-1-platform",
+            user_id="user-member-1",
+            team_id=platform_team.id,
+            role=TeamRole.MEMBER,
+        ),
+        TeamMembership(
+            id="membership-member-6-platform",
+            user_id=platform_member.id,
+            team_id=platform_team.id,
+            role=TeamRole.MEMBER,
+        ),
+    ]
     project = Project(
         id="project-mvp",
         team_id=team.id,
@@ -77,6 +147,33 @@ def seed_database(session: Session, reference_date: date | None = None) -> None:
         start_date=today - timedelta(days=14),
         target_date=today + timedelta(days=14),
     )
+    projects = [
+        project,
+        Project(
+            id="project-client-delivery",
+            team_id=team.id,
+            name="Client Delivery",
+            status="ACTIVE",
+            start_date=today - timedelta(days=7),
+            target_date=today + timedelta(days=21),
+        ),
+        Project(
+            id="project-platform-core",
+            team_id=platform_team.id,
+            name="Platform Core",
+            status="ACTIVE",
+            start_date=today - timedelta(days=21),
+            target_date=today + timedelta(days=30),
+        ),
+        Project(
+            id="project-platform-automation",
+            team_id=platform_team.id,
+            name="Platform Automation",
+            status="ACTIVE",
+            start_date=today - timedelta(days=10),
+            target_date=today + timedelta(days=25),
+        ),
+    ]
     statuses = [
         WorkStatus.NOT_STARTED,
         WorkStatus.IN_PROGRESS,
@@ -97,6 +194,50 @@ def seed_database(session: Session, reference_date: date | None = None) -> None:
         )
         for index in range(1, 21)
     ]
+    work_items.extend(
+        [
+            WorkItem(
+                id="work-item-client-01",
+                project_id="project-client-delivery",
+                code="CLIENT-001",
+                title="Prepare client reporting workflow",
+                owner_id=members[0].id,
+                status=WorkStatus.IN_PROGRESS.value,
+                priority=2,
+                planned_end_date=today + timedelta(days=8),
+            ),
+            WorkItem(
+                id="work-item-client-02",
+                project_id="project-client-delivery",
+                code="CLIENT-002",
+                title="Validate client report template",
+                owner_id=members[1].id,
+                status=WorkStatus.NOT_STARTED.value,
+                priority=3,
+                planned_end_date=today + timedelta(days=12),
+            ),
+            WorkItem(
+                id="work-item-platform-01",
+                project_id="project-platform-core",
+                code="PLAT-001",
+                title="Build shared platform capability",
+                owner_id=platform_member.id,
+                status=WorkStatus.IN_PROGRESS.value,
+                priority=1,
+                planned_end_date=today + timedelta(days=9),
+            ),
+            WorkItem(
+                id="work-item-automation-01",
+                project_id="project-platform-automation",
+                code="AUTO-001",
+                title="Automate report validation",
+                owner_id=members[0].id,
+                status=WorkStatus.NOT_STARTED.value,
+                priority=2,
+                planned_end_date=today + timedelta(days=15),
+            ),
+        ]
+    )
     template_schema = {
         "type": "object",
         "required": ["completed", "in_progress", "blockers", "next_week", "support_required"],
@@ -124,14 +265,42 @@ def seed_database(session: Session, reference_date: date | None = None) -> None:
         schema_json=template_schema,
         active=True,
     )
+    platform_member_template = ReportTemplate(
+        id="template-platform-member-v1",
+        team_id=platform_team.id,
+        name="default-member",
+        scope=ReportScope.MEMBER,
+        version=1,
+        schema_json=template_schema,
+        active=True,
+    )
+    platform_team_template = ReportTemplate(
+        id="template-platform-team-v1",
+        team_id=platform_team.id,
+        name="default-team",
+        scope=ReportScope.TEAM,
+        version=1,
+        schema_json=template_schema,
+        active=True,
+    )
     # Models deliberately avoid ORM relationships, so establish FK layers explicitly.
-    session.add(team)
+    session.add_all([team, platform_team])
     session.flush()
     session.add_all(users)
     session.flush()
-    session.add(project)
+    session.add_all(memberships)
     session.flush()
-    session.add_all([*work_items, member_template, team_template])
+    session.add_all(projects)
+    session.flush()
+    session.add_all(
+        [
+            *work_items,
+            member_template,
+            team_template,
+            platform_member_template,
+            platform_team_template,
+        ]
+    )
     session.flush()
 
     reports: list[DailyReport] = []

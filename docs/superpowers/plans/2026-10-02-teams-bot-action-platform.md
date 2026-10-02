@@ -83,27 +83,27 @@
 - Produces: `TeamRole`, `TeamMembership`, and repository methods `get_active(user_id, team_id)`, `list_active_for_user(user_id)`, and `list_expected_members(team_id)`.
 - Produces: `User.tenant_id`; `Team.tenant_id`, `Team.backfill_window_days`; removes global `User.role` and `User.team_id` after migration backfill.
 
-- [ ] **Step 1: Write failing schema and migration tests**
+- [x] **Step 1: Write failing schema and migration tests**
 
   Assert `(user_id, team_id)` uniqueness, the three exact role values, tenant fields, seven-day default, legacy `LEAD -> TECH_LEAD` data migration, and removal of global role/team columns after upgrade.
 
-- [ ] **Step 2: Run RED tests**
+- [x] **Step 2: Run RED tests**
 
   Run: `uv run pytest apps/backend/tests/test_membership_models.py apps/backend/tests/test_migrations.py apps/backend/tests/test_seed.py -q`
 
   Expected: FAIL because membership tables/models do not exist.
 
-- [ ] **Step 3: Implement models, additive migration, model registration, and multi-team seed data**
+- [x] **Step 3: Implement models, additive migration, model registration, and multi-team seed data**
 
   Seed at least two Teams, two Projects per Team, one cross-team Tech Lead, one cross-team PM, and members with different membership combinations. Preserve deterministic IDs used by tests and the dev identity selector.
 
-- [ ] **Step 4: Run GREEN tests and static checks**
+- [x] **Step 4: Run GREEN tests and static checks**
 
   Run: `uv run pytest apps/backend/tests/test_membership_models.py apps/backend/tests/test_migrations.py apps/backend/tests/test_seed.py -q && uv run ruff check apps/backend/src apps/backend/tests && uv run mypy apps/backend/src`
 
   Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
   `git commit -m "feat: add team-scoped memberships"`
 
