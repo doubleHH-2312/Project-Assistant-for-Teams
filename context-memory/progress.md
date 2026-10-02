@@ -1,0 +1,24 @@
+# Progress
+
+Statuses: `READY`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
+
+| Task | Status | Owner | Verification evidence | Next action |
+|---|---|---|---|---|
+| CTX-001 Context memory baseline | DONE | Codex | Files created before application source | Start foundation |
+| FND-001 Repository/tooling skeleton | DONE | Codex | Ruff/mypy/web lint/test/build pass | Maintain toolchain |
+| FND-002 Database schema/migrations/seed | DONE | Codex | Migration test; FK-enforced seed test; PostgreSQL seed smoke | Use Alembic in deployed environments |
+| DLY-001 Daily report API/domain | DONE | Codex | Domain/service/API tests; live POST smoke with effectiveBlocker | Add generated client drift gate |
+| DLY-002 Daily report web flow | DONE | Codex | Vitest render test; production Vite build; live web container | Add browser E2E |
+| MON-001 Overview and member activity | DONE | Codex | Overview tests; live coverage changed 60% to 80% after report | Add drill-down screens |
+| MON-002 Reminder worker | DONE | Codex | Schedule/service tests; worker container stays running | Real delivery belongs to INT-001 |
+| WKL-001 Member weekly workflow | DONE | Codex | Service/API tests; live generate and confirm smoke with mock LLM | Add browser E2E |
+| WKL-002 Team weekly workflow/revisions | DONE | Codex | Confirmed-only aggregation and immutability/revision tests | Add browser E2E |
+| INT-001 Teams adapter/manifest | BLOCKED | Codex | v1.23 tab manifest instance validates; ZIP has three root files | Need public HTTPS host, app registration and tenant sideload |
+| INT-002 Internal LLM adapter | BLOCKED | Codex | Deterministic mock and schema rejection tests pass | Need endpoint/auth/model/data-policy contract |
+| OPS-001 Containers/CI/IaC/runbooks | IN_PROGRESS | Codex | API/worker/web images build; Compose health and proxy smoke pass | Add GitHub Actions and Terraform baseline |
+| QA-001 Full review and verification | IN_PROGRESS | Codex | Fresh: 19 backend + 1 web test pass; lint/type/build/Compose/manifest/live health pass | Add Playwright, accessibility and security review |
+| ARC-002 Teams bot/action platform design | IN_PROGRESS | Codex | Written spec self-reviewed: no placeholders; corrected Teams command-menu/privacy semantics; D-013 explicitly supersedes D-002 for MVP | User review written spec |
+| BOT-001 Extensible Teams action platform | READY | Unassigned | Pending approved spec/plan | After ARC-002 |
+| RBAC-001 Team-scoped memberships | READY | Unassigned | Pending approved spec/plan | First implementation increment |
+| AUD-001 Invocation and status-event audit | READY | Unassigned | Pending approved spec/plan | After RBAC-001 |
+| OPS-002 Vercel/Supabase demo deployment | READY | Unassigned | Pending approved spec/plan | After runnable bot/web slice |
