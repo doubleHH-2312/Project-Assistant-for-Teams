@@ -173,31 +173,31 @@
 - Produces: `DailyReportRepository.save_with_event_and_success(report: DailyReport, event: WorkItemStatusEvent, invocation_id: str) -> DailyReport` so the domain record, event, and success transition share one transaction.
 - Produces: `DailyReportService.create(actor: User, team_id: str, request: DailyReportCreate, audit: RequestAuditContext) -> DailyReport` and the corresponding typed `update` method; both append an event with `recorded_at`, Team-local date/time, business `report_date`, effective blocker, source, and `supersedes_event_id`.
 
-- [ ] **Step 1: Write failing append-only and uniqueness tests**
+- [x] **Step 1: Write failing append-only and uniqueness tests**
 
   Assert correlation/idempotency constraints, sanitized metadata, immutable prior events, and event linkage to the Daily Report.
 
-- [ ] **Step 2: Write the blocker-date regression test**
+- [x] **Step 2: Write the blocker-date regression test**
 
   Record `BLOCKED` on `2026-10-04`, update/resubmit later, then assert the timeline still exposes the original date and the new event points to the superseded event.
 
-- [ ] **Step 3: Run RED tests**
+- [x] **Step 3: Run RED tests**
 
   Run: `uv run pytest apps/backend/tests/test_audit_models.py apps/backend/tests/test_daily_status_timeline.py -q`
 
   Expected: FAIL because audit/event storage is absent.
 
-- [ ] **Step 4: Implement models, migration, two-phase invocation lifecycle, and transactional Daily+Event+success save**
+- [x] **Step 4: Implement models, migration, two-phase invocation lifecycle, and transactional Daily+Event+success save**
 
   Persist `PENDING` separately so failures survive rollback; commit Daily Report, status event, and `SUCCEEDED` outcome in one transaction. Never put full report content, tokens, or secrets in invocation metadata.
 
-- [ ] **Step 5: Run GREEN, migration, and daily regression tests**
+- [x] **Step 5: Run GREEN, migration, and daily regression tests**
 
   Run: `uv run pytest apps/backend/tests/test_audit_models.py apps/backend/tests/test_daily_status_timeline.py apps/backend/tests/test_daily_report_model.py apps/backend/tests/test_daily_report_service.py apps/backend/tests/test_migrations.py -q`
 
   Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
   `git commit -m "feat: preserve action and status history"`
 

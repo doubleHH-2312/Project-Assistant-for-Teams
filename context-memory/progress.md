@@ -21,5 +21,6 @@ Statuses: `READY`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 | PLN-001 Teams bot/action implementation plan | DONE | Codex | 11-task TDD plan self-reviewed for spec coverage, type consistency, review risks and deployment gates | User confirmation, then Task 1 |
 | BOT-001 Extensible Teams action platform | IN_PROGRESS | Codex | Approved plan `docs/superpowers/plans/2026-10-02-teams-bot-action-platform.md`; SDD ledger initialized | Execute Tasks 1-11 |
 | RBAC-001 Team-scoped memberships | DONE | Codex | Tasks 1-2: membership migration/backfill, two-Team seed, inherited permission policy, explicit Team-scoped repositories and legacy scope removal; fresh 26 backend tests + Ruff + strict mypy pass | Use policy in Action Dispatcher |
-| AUD-001 Invocation and status-event audit | IN_PROGRESS | Codex | Approved Task 3 contract; migration slot moved to `0004` after legacy scope removal | Write RED audit/timeline tests |
+| AUD-001 Invocation and status-event audit | DONE | Codex | Task 3: two-phase invocation lifecycle, sanitized metadata, idempotency constraint, atomic Daily/event/success persistence, immutable superseding timeline; blocker-date regression and fresh 29 backend tests + Ruff + mypy pass | Feed timeline evidence into actions/reports |
+| BOT-002 Typed Action Registry/Dispatcher | IN_PROGRESS | Codex | Approved Task 4 interfaces and pre-flight dependency checks | Write RED parser/registry/dispatcher tests |
 | OPS-002 Vercel/Supabase demo deployment | READY | Unassigned | Pending approved spec/plan | After runnable bot/web slice |

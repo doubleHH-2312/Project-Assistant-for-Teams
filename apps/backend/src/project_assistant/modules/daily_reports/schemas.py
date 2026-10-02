@@ -33,6 +33,7 @@ class DailyReportUpdate(ApiModel):
 
 class DailyReportRead(ApiModel):
     id: str
+    team_id: str = Field(alias="teamId")
     user_id: str = Field(alias="userId")
     project_id: str = Field(alias="projectId")
     work_item_id: str = Field(alias="workItemId")
@@ -42,5 +43,8 @@ class DailyReportRead(ApiModel):
     blocker: str | None
     effective_blocker: str | None = Field(alias="effectiveBlocker")
     next_action: str = Field(alias="nextAction")
+    source: str
+    submitted_at: datetime = Field(alias="submittedAt")
+    last_edited_at: datetime | None = Field(alias="lastEditedAt")
     created_at: datetime = Field(alias="createdAt")
     updated_at: datetime = Field(alias="updatedAt")

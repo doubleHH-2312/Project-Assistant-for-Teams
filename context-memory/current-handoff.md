@@ -9,8 +9,9 @@
   `docs/superpowers/specs/2026-10-02-teams-bot-action-platform-design.md`.
 - The user approved the written spec and 11-task TDD implementation plan at
   `docs/superpowers/plans/2026-10-02-teams-bot-action-platform.md`. Tasks 1-2 are
-  implemented: roles now live only on active Team Memberships, permission inheritance
-  is centralized, and Daily/Overview/Weekly/Notification reads require Team scope.
+  implemented. Task 3 is also implemented: every Daily create/edit starts an invocation
+  and appends a server-timestamped Work Item Status Event; the report, event, and
+  successful outcome commit atomically.
 - D-014 records the GPT-first OpenAI-compatible adapter; switching to the company LLM
   is configuration-only after its endpoint passes the shared contract tests.
 - A runnable local web vertical slice is available at `http://localhost:5173` when the
@@ -24,7 +25,8 @@
 
 ## Verification performed
 
-- Backend: Task 2 fresh run passed 26 tests; Ruff and strict mypy passed.
+- Backend: Task 3 fresh run passed 29 tests; Ruff and strict mypy passed. Migration
+  tests cover clean install plus legacy Daily `team_id` backfill.
 - Frontend: Vitest, ESLint, TypeScript and Vite production build passed.
 - Containers: API, worker, and web images built; Compose health ordering passed.
 - Live HTTP: web HTML and proxied liveness returned 200; overview returned seeded data;
@@ -36,9 +38,9 @@
 
 ## Next action
 
-Continue Task 3 under RED -> GREEN -> REFACTOR: create append-only Action Invocation
-and Work Item Status Event tests/models in migration `0004`, then make Daily submission
-persist its domain record, status event, and successful invocation atomically.
+Continue Task 4 under RED -> GREEN -> REFACTOR: implement the transport-neutral typed
+Action Registry, command parser, factory, and dispatcher using the Team Membership
+policy and Action Invocation lifecycle from Tasks 2-3.
 
 ## External blockers
 

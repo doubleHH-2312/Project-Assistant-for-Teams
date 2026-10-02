@@ -1,5 +1,6 @@
 """Import all ORM models so metadata discovery is deterministic."""
 
+from project_assistant.modules.audit.models import ActionInvocation, WorkItemStatusEvent
 from project_assistant.modules.daily_reports.models import DailyReport
 from project_assistant.modules.memberships.models import TeamMembership
 from project_assistant.modules.notifications.models import NotificationLog, TeamsConversation
@@ -11,6 +12,7 @@ from project_assistant.modules.weekly_reports.models import WeeklyReport
 from project_assistant.modules.work_items.models import WorkItem
 
 __all__ = [
+    "ActionInvocation",
     "DailyReport",
     "TeamMembership",
     "NotificationLog",
@@ -21,4 +23,5 @@ __all__ = [
     "User",
     "WeeklyReport",
     "WorkItem",
+    "WorkItemStatusEvent",
 ]

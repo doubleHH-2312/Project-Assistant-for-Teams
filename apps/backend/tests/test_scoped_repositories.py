@@ -92,6 +92,7 @@ def _seed_scoped_records(session: Session) -> None:
     reports = [
         DailyReport(
             id="daily-a",
+            team_id="team-a",
             user_id="user-1",
             project_id="project-a",
             work_item_id="item-a",
@@ -102,6 +103,7 @@ def _seed_scoped_records(session: Session) -> None:
         ),
         DailyReport(
             id="daily-b",
+            team_id="team-b",
             user_id="user-1",
             project_id="project-b",
             work_item_id="item-b",

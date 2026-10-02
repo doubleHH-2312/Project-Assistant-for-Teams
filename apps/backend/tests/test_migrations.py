@@ -13,8 +13,8 @@ def test_initial_migration_builds_expected_schema(tmp_path: Path) -> None:
     command.upgrade(config, "head")
 
     engine = create_engine(f"sqlite:///{database_path}")
-    tables = set(inspect(engine).get_table_names())
-    engine.dispose()
+    inspector = inspect(engine)
+    tables = set(inspector.get_table_names())
     assert {
         "teams",
         "users",
@@ -25,7 +25,16 @@ def test_initial_migration_builds_expected_schema(tmp_path: Path) -> None:
         "weekly_reports",
         "notification_logs",
         "team_memberships",
+        "action_invocations",
+        "work_item_status_events",
     }.issubset(tables)
+    daily_columns = {
+        column["name"] for column in inspector.get_columns("daily_reports")
+    }
+    assert {"team_id", "source", "submitted_at", "last_edited_at"}.issubset(
+        daily_columns
+    )
+    engine.dispose()
 
 
 def test_membership_migration_backfills_legacy_user_scope(tmp_path: Path) -> None:
@@ -58,6 +67,40 @@ def test_membership_migration_backfills_legacy_user_scope(tmp_path: Path) -> Non
                 ) VALUES (
                     'user-lead', 'entra-lead', 'Legacy Lead', 'lead@example.test',
                     'LEAD', 'team-legacy', 1
+                )
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                INSERT INTO projects (id, team_id, name, status)
+                VALUES ('project-legacy', 'team-legacy', 'Legacy Project', 'ACTIVE')
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                INSERT INTO work_items (
+                    id, project_id, code, title, status, priority
+                ) VALUES (
+                    'item-legacy', 'project-legacy', 'LEG-1', 'Legacy Item',
+                    'IN_PROGRESS', 0
+                )
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                INSERT INTO daily_reports (
+                    id, user_id, project_id, work_item_id, report_date, status,
+                    work_summary, blocker, next_action
+                ) VALUES (
+                    'daily-legacy', 'user-lead', 'project-legacy', 'item-legacy',
+                    '2026-10-01', 'BLOCKED', 'Waiting for access', NULL,
+                    'Request access'
                 )
                 """
             )
@@ -102,6 +145,9 @@ def test_membership_migration_backfills_legacy_user_scope(tmp_path: Path) -> Non
         user_tenant = connection.execute(
             text("SELECT tenant_id FROM users WHERE id = 'user-lead'")
         ).scalar_one()
+        daily_team = connection.execute(
+            text("SELECT team_id FROM daily_reports WHERE id = 'daily-legacy'")
+        ).scalar_one()
     engine.dispose()
 
     assert dict(membership) == {
@@ -112,3 +158,4 @@ def test_membership_migration_backfills_legacy_user_scope(tmp_path: Path) -> Non
     }
     assert dict(team) == {"tenant_id": "legacy-tenant", "backfill_window_days": 7}
     assert user_tenant == "legacy-tenant"
+    assert daily_team == "team-legacy"

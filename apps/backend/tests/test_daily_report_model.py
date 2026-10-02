@@ -32,6 +32,7 @@ def test_daily_report_rejects_duplicate_user_work_item_and_date() -> None:
 
         first = DailyReport(
             id="report-1",
+            team_id=team.id,
             user_id=user.id,
             project_id=project.id,
             work_item_id=item.id,
@@ -42,6 +43,7 @@ def test_daily_report_rejects_duplicate_user_work_item_and_date() -> None:
         )
         duplicate = DailyReport(
             id="report-2",
+            team_id=team.id,
             user_id=user.id,
             project_id=project.id,
             work_item_id=item.id,
@@ -62,6 +64,7 @@ def test_daily_report_rejects_duplicate_user_work_item_and_date() -> None:
 
 def test_blocked_report_uses_summary_as_effective_blocker_without_mutating_raw_value() -> None:
     report = DailyReport(
+        team_id="team-1",
         user_id="user-1",
         project_id="project-1",
         work_item_id="item-1",

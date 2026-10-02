@@ -44,6 +44,7 @@ async def test_overview_computes_coverage_missing_and_blocker_age() -> None:
     reports = [
         DailyReport(
             id="blocked-old",
+            team_id="team-1",
             user_id="user-1",
             project_id="project-1",
             work_item_id="item-1",
@@ -54,6 +55,7 @@ async def test_overview_computes_coverage_missing_and_blocker_age() -> None:
         ),
         DailyReport(
             id="blocked-current",
+            team_id="team-1",
             user_id="user-1",
             project_id="project-1",
             work_item_id="item-1",
@@ -64,6 +66,7 @@ async def test_overview_computes_coverage_missing_and_blocker_age() -> None:
         ),
         DailyReport(
             id="current-2",
+            team_id="team-1",
             user_id="user-2",
             project_id="project-1",
             work_item_id="item-2",
@@ -74,6 +77,7 @@ async def test_overview_computes_coverage_missing_and_blocker_age() -> None:
         ),
         DailyReport(
             id="current-3",
+            team_id="team-1",
             user_id="user-3",
             project_id="project-1",
             work_item_id="item-3",

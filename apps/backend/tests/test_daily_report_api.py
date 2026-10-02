@@ -11,10 +11,14 @@ from project_assistant.modules.users.models import User
 
 
 class StubDailyReportService:
-    async def create(self, actor: User, request):  # type: ignore[no-untyped-def]
+    async def create(
+        self, actor: User, team_id, request, audit  # type: ignore[no-untyped-def]
+    ):  # type: ignore[no-untyped-def]
+        del audit
         now = datetime(2026, 10, 1, 10, tzinfo=UTC)
         return DailyReport(
             id="daily-1",
+            team_id=team_id,
             user_id=actor.id,
             project_id=request.project_id,
             work_item_id=request.work_item_id,
@@ -23,6 +27,8 @@ class StubDailyReportService:
             work_summary=request.work_summary,
             blocker=request.blocker,
             next_action=request.next_action,
+            source="WEB",
+            submitted_at=now,
             created_at=now,
             updated_at=now,
         )

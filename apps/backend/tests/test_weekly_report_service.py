@@ -141,6 +141,7 @@ async def test_member_generation_uses_daily_evidence_and_preserves_ids() -> None
     repository.daily_reports.append(
         DailyReport(
             id="daily-1",
+            team_id="team-1",
             user_id="user-1",
             project_id="project-1",
             work_item_id="OPS-001",

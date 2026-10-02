@@ -308,6 +308,7 @@ def seed_database(session: Session, reference_date: date | None = None) -> None:
             reports.append(
                 DailyReport(
                     id=f"daily-{day_index}-{member_index}",
+                    team_id=team.id,
                     user_id=member.id,
                     project_id=project.id,
                     work_item_id=work_items[member_index].id,
@@ -326,6 +327,7 @@ def seed_database(session: Session, reference_date: date | None = None) -> None:
         reports.append(
             DailyReport(
                 id=f"daily-today-{member_index}",
+                team_id=team.id,
                 user_id=member.id,
                 project_id=project.id,
                 work_item_id=work_items[member_index].id,
@@ -339,6 +341,7 @@ def seed_database(session: Session, reference_date: date | None = None) -> None:
         reports.append(
             DailyReport(
                 id=f"daily-extra-{member_index}",
+                team_id=team.id,
                 user_id=members[member_index].id,
                 project_id=project.id,
                 work_item_id=work_items[5 + member_index].id,
