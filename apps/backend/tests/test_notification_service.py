@@ -5,7 +5,7 @@ import pytest
 from project_assistant.integrations.teams.transport import DeliveryResult
 from project_assistant.modules.notifications.models import NotificationLog, TeamsConversation
 from project_assistant.modules.notifications.service import NotificationService
-from project_assistant.modules.users.models import User, UserRole
+from project_assistant.modules.users.models import User
 
 
 class FakeNotificationRepository:
@@ -25,7 +25,10 @@ class FakeNotificationRepository:
     async def list_expected_reporters(self, team_id: str) -> list[User]:
         return self.users
 
-    async def has_daily_report(self, user_id: str, target_date: date) -> bool:
+    async def has_daily_report(
+        self, user_id: str, team_id: str, target_date: date
+    ) -> bool:
+        del team_id, target_date
         return user_id in self.reported
 
     async def get_conversation(self, user_id: str) -> TeamsConversation | None:
@@ -77,8 +80,6 @@ def member(index: int) -> User:
         external_user_id=f"entra-{index}",
         name=f"Member {index}",
         email=f"member{index}@example.test",
-        role=UserRole.MEMBER,
-        team_id="team-1",
     )
 
 

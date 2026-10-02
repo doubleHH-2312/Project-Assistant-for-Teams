@@ -48,7 +48,9 @@
 - Create `apps/backend/src/project_assistant/integrations/teams/{app,context,presenters,cards}.py` around Microsoft Teams SDK v2.
 - Replace the vendor-specific implementation in `integrations/llm/provider.py` with an OpenAI-compatible adapter and provider factory.
 - Modify existing user, team, daily, weekly, notification, seed, router, and model registry files to consume memberships and explicit Team scope.
-- Create additive Alembic revisions `20261002_0002_team_memberships.py`, `20261002_0003_audit_events.py`, and `20261002_0004_weekly_multiteam.py`.
+- Create additive Alembic revisions `20261002_0002_team_memberships.py`,
+  `20261002_0003_remove_legacy_user_scope.py`, `20261002_0004_audit_events.py`, and
+  `20261002_0005_weekly_multiteam.py`.
 
 ### API, contract, and frontend
 
@@ -123,31 +125,31 @@
 - Produces: `Permission` enum and `AuthorizationService.require(actor_id: str, team_ids: Collection[str], permission: Permission) -> dict[str, TeamMembership]`.
 - Produces: repository methods whose team-bearing reads require `team_id`; no method returns cross-team records by implicit user scope.
 
-- [ ] **Step 1: Write failing role-inheritance and denial tests**
+- [x] **Step 1: Write failing role-inheritance and denial tests**
 
   Cover inactive membership, Member denial, Tech Lead inheritance, PM all-actions-on-assigned-Teams, and all-selected-Teams requirement for multi-team generation.
 
-- [ ] **Step 2: Write failing repository scope tests**
+- [x] **Step 2: Write failing repository scope tests**
 
   Seed identically named work items and reports in two Teams and assert every team-scoped method returns only the requested Team.
 
-- [ ] **Step 3: Run RED tests**
+- [x] **Step 3: Run RED tests**
 
   Run: `uv run pytest apps/backend/tests/test_authorization_service.py apps/backend/tests/test_scoped_repositories.py -q`
 
   Expected: FAIL on missing policy and obsolete global-role filters.
 
-- [ ] **Step 4: Implement policy and replace global-role authorization**
+- [x] **Step 4: Implement policy and replace global-role authorization**
 
   Map Member to own Daily/History/Member Weekly, Tech Lead to inherited plus Daily Summary/Team Weekly/Multi-team, and PM to all permissions. Return 404 for inaccessible Team resources and 403 for a known action without permission.
 
-- [ ] **Step 5: Run GREEN tests and existing service suite**
+- [x] **Step 5: Run GREEN tests and existing service suite**
 
   Run: `uv run pytest apps/backend/tests/test_authorization_service.py apps/backend/tests/test_scoped_repositories.py apps/backend/tests/test_daily_report_service.py apps/backend/tests/test_team_overview_service.py apps/backend/tests/test_weekly_report_service.py -q`
 
   Expected: PASS after updating fixtures to Team Membership.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
   `git commit -m "feat: enforce team-scoped permissions"`
 
@@ -157,7 +159,7 @@
 - Create: `apps/backend/src/project_assistant/modules/audit/models.py`
 - Create: `apps/backend/src/project_assistant/modules/audit/repository.py`
 - Create: `apps/backend/src/project_assistant/modules/audit/service.py`
-- Create: `apps/backend/alembic/versions/20261002_0003_audit_events.py`
+- Create: `apps/backend/alembic/versions/20261002_0004_audit_events.py`
 - Modify: `apps/backend/src/project_assistant/modules/daily_reports/models.py`
 - Modify: `apps/backend/src/project_assistant/modules/daily_reports/repository.py`
 - Modify: `apps/backend/src/project_assistant/modules/daily_reports/service.py`
@@ -339,13 +341,13 @@
 ## Task 7: Project-grouped member, team, and multi-team weekly reports
 
 **Files:**
-- Create: `apps/backend/alembic/versions/20261002_0004_weekly_multiteam.py`
+- Create: `apps/backend/alembic/versions/20261002_0005_weekly_multiteam.py`
 - Modify: `apps/backend/src/project_assistant/modules/templates/models.py`
 - Modify: `apps/backend/src/project_assistant/modules/weekly_reports/{models,schemas,repository,service,router}.py`
 - Create: `apps/backend/src/project_assistant/modules/actions/handlers/weekly.py`
 - Create: `apps/backend/src/project_assistant/modules/weekly_reports/evidence.py`
 - Create: `apps/backend/src/project_assistant/modules/publications/{models,repository,service}.py`
-- Extend: `apps/backend/alembic/versions/20261002_0004_weekly_multiteam.py` with evidence-link and publication tables
+- Extend: `apps/backend/alembic/versions/20261002_0005_weekly_multiteam.py` with evidence-link and publication tables
 - Modify: `apps/backend/src/project_assistant/seed.py`
 - Test: `apps/backend/tests/test_weekly_evidence.py`
 - Test: `apps/backend/tests/test_multiteam_weekly_service.py`
@@ -397,7 +399,7 @@
 - Create: `apps/backend/src/project_assistant/integrations/teams/cards.py`
 - Modify: `apps/backend/src/project_assistant/integrations/teams/transport.py`
 - Modify: `apps/backend/src/project_assistant/modules/notifications/models.py`
-- Create: `apps/backend/alembic/versions/20261002_0005_teams_bindings.py`
+- Create: `apps/backend/alembic/versions/20261002_0006_teams_bindings.py`
 - Modify: `apps/backend/src/project_assistant/main.py`
 - Modify: `apps/teams-app/manifest/manifest.template.json`
 - Create: `apps/teams-app/adaptive-cards/{daily,team-selector,weekly-review,summary}.json`

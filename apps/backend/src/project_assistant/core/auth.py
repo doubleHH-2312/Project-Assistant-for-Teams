@@ -1,5 +1,4 @@
 import asyncio
-from collections.abc import Callable, Coroutine
 from typing import Annotated, Any
 
 import jwt
@@ -11,7 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from project_assistant.core.config import Settings, get_settings
 from project_assistant.core.database import get_session
 from project_assistant.core.errors import AppError
-from project_assistant.modules.users.models import User, UserRole
+from project_assistant.modules.memberships.repository import SqlAlchemyMembershipRepository
+from project_assistant.modules.memberships.service import AuthorizationService
+from project_assistant.modules.users.models import User
 
 
 class EntraTokenVerifier:
@@ -58,20 +59,18 @@ async def get_current_user(
         if not object_id or tenant_id != settings.entra_tenant_id:
             raise AppError(401, "TOKEN_INVALID", "Access token identity is invalid")
         user = await session.scalar(
-            select(User).where(User.external_user_id == object_id, User.active.is_(True))
+            select(User).where(
+                User.external_user_id == object_id,
+                User.tenant_id == tenant_id,
+                User.active.is_(True),
+            )
         )
     if user is None:
         raise AppError(403, "USER_NOT_PROVISIONED", "User is not provisioned")
     return user
 
 
-def require_roles(
-    *roles: UserRole,
-) -> Callable[[Annotated[User, Depends(get_current_user)]], Coroutine[Any, Any, User]]:
-    async def authorize(user: Annotated[User, Depends(get_current_user)]) -> User:
-        if user.role not in roles:
-            raise AppError(403, "FORBIDDEN", "The current role cannot perform this action")
-        return user
-
-    return authorize
-
+async def get_authorization_service(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> AuthorizationService:
+    return AuthorizationService(SqlAlchemyMembershipRepository(session))

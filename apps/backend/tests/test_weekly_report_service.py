@@ -6,7 +6,7 @@ from project_assistant.core.errors import AppError
 from project_assistant.integrations.llm.provider import LLMResult, MockLLMProvider
 from project_assistant.modules.daily_reports.models import DailyReport, WorkStatus
 from project_assistant.modules.templates.models import ReportTemplate
-from project_assistant.modules.users.models import User, UserRole
+from project_assistant.modules.users.models import User
 from project_assistant.modules.weekly_reports.models import (
     ReportScope,
     WeeklyReport,
@@ -53,14 +53,20 @@ class FakeWeeklyRepository:
     ) -> ReportTemplate | None:
         return self.templates.get(scope)
 
-    async def get_template(self, template_id: str) -> ReportTemplate | None:
+    async def get_template(self, template_id: str, team_id: str) -> ReportTemplate | None:
         return next(
-            (template for template in self.templates.values() if template.id == template_id), None
+            (
+                template
+                for template in self.templates.values()
+                if template.id == template_id and template.team_id == team_id
+            ),
+            None,
         )
 
     async def list_daily_reports(
-        self, user_id: str, week_start: date, week_end: date
+        self, user_id: str, team_id: str, week_start: date, week_end: date
     ) -> list[DailyReport]:
+        del team_id
         return [
             report
             for report in self.daily_reports
@@ -103,18 +109,29 @@ class FakeWeeklyRepository:
             self.saved.append(report)
         return report
 
-    async def get_by_id(self, report_id: str) -> WeeklyReport | None:
-        return next((report for report in self.saved if report.id == report_id), None)
+    async def get_by_id(self, report_id: str, team_id: str) -> WeeklyReport | None:
+        return next(
+            (
+                report
+                for report in self.saved
+                if report.id == report_id and report.team_id == team_id
+            ),
+            None,
+        )
 
 
-def user(role: UserRole = UserRole.MEMBER, user_id: str = "user-1") -> User:
+class AllowAuthorization:
+    async def require(self, actor_id, team_ids, permission):  # type: ignore[no-untyped-def]
+        del actor_id, team_ids, permission
+        return {}
+
+
+def user(user_id: str = "user-1") -> User:
     return User(
         id=user_id,
         external_user_id=f"entra-{user_id}",
         name="User",
         email=f"{user_id}@example.test",
-        role=role,
-        team_id="team-1",
     )
 
 
@@ -133,10 +150,15 @@ async def test_member_generation_uses_daily_evidence_and_preserves_ids() -> None
             next_action="Start integration",
         )
     )
-    service = WeeklyReportService(repository, MockLLMProvider())
+    service = WeeklyReportService(
+        repository, MockLLMProvider(), AllowAuthorization()  # type: ignore[arg-type]
+    )
 
     report = await service.generate(
-        user(), WeeklyGenerateRequest(scope=ReportScope.MEMBER, weekStart=date(2026, 9, 28))
+        user(),
+        WeeklyGenerateRequest(
+            teamId="team-1", scope=ReportScope.MEMBER, weekStart=date(2026, 9, 28)
+        ),
     )
 
     assert report.input_record_ids == ["daily-1"]
@@ -186,11 +208,15 @@ async def test_team_generation_uses_only_confirmed_member_reports_and_lists_miss
             ),
         ]
     )
-    service = WeeklyReportService(repository, MockLLMProvider())
+    service = WeeklyReportService(
+        repository, MockLLMProvider(), AllowAuthorization()  # type: ignore[arg-type]
+    )
 
     report = await service.generate(
-        user(UserRole.LEAD, "user-lead"),
-        WeeklyGenerateRequest(scope=ReportScope.TEAM, weekStart=date(2026, 9, 28)),
+        user("user-lead"),
+        WeeklyGenerateRequest(
+            teamId="team-1", scope=ReportScope.TEAM, weekStart=date(2026, 9, 28)
+        ),
     )
 
     assert report.input_record_ids == ["member-confirmed"]
@@ -206,11 +232,18 @@ class InvalidProvider:
 @pytest.mark.asyncio
 async def test_invalid_llm_output_is_rejected_without_persistence() -> None:
     repository = FakeWeeklyRepository()
-    service = WeeklyReportService(repository, InvalidProvider())
+    service = WeeklyReportService(
+        repository, InvalidProvider(), AllowAuthorization()  # type: ignore[arg-type]
+    )
 
     with pytest.raises(AppError) as invalid:
         await service.generate(
-            user(), WeeklyGenerateRequest(scope=ReportScope.MEMBER, weekStart=date(2026, 9, 28))
+            user(),
+            WeeklyGenerateRequest(
+                teamId="team-1",
+                scope=ReportScope.MEMBER,
+                weekStart=date(2026, 9, 28),
+            ),
         )
 
     assert invalid.value.code == "LLM_OUTPUT_INVALID"
@@ -239,15 +272,18 @@ async def test_confirmed_report_is_immutable_and_revision_supersedes_it() -> Non
         confirmed_by="user-1",
     )
     repository.saved.append(confirmed)
-    service = WeeklyReportService(repository, MockLLMProvider())
+    service = WeeklyReportService(
+        repository, MockLLMProvider(), AllowAuthorization()  # type: ignore[arg-type]
+    )
 
     with pytest.raises(AppError) as immutable:
         await service.update(
             user(),
+            "team-1",
             confirmed.id,
             WeeklyUpdateRequest(contentJson={"completed": ["Changed"]}),
         )
-    revision = await service.create_revision(user(), confirmed.id)
+    revision = await service.create_revision(user(), "team-1", confirmed.id)
 
     assert immutable.value.code == "WEEKLY_REPORT_IMMUTABLE"
     assert revision.status == WeeklyReportStatus.DRAFT

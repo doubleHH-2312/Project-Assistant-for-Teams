@@ -5,7 +5,7 @@ import pytest
 
 from project_assistant.core.auth import get_current_user
 from project_assistant.main import app
-from project_assistant.modules.users.models import User, UserRole
+from project_assistant.modules.users.models import User
 from project_assistant.modules.weekly_reports.models import (
     ReportScope,
     WeeklyReport,
@@ -20,7 +20,7 @@ class StubWeeklyService:
             id="weekly-1",
             scope=request.scope,
             subject_user_id=actor.id,
-            team_id=actor.team_id,
+            team_id=request.team_id,
             week_start=request.week_start,
             week_end=date(2026, 10, 2),
             content_json={"completed": ["OPS-001"]},
@@ -42,8 +42,6 @@ async def test_generate_weekly_report_returns_traceable_contract() -> None:
         external_user_id="entra-1",
         name="Member",
         email="member@example.test",
-        role=UserRole.MEMBER,
-        team_id="team-1",
     )
 
     async def override_actor() -> User:
@@ -59,7 +57,11 @@ async def test_generate_weekly_report_returns_traceable_contract() -> None:
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
                 "/api/v1/weekly-reports/generate",
-                json={"scope": ReportScope.MEMBER, "weekStart": "2026-09-28"},
+                json={
+                    "teamId": "team-1",
+                    "scope": ReportScope.MEMBER,
+                    "weekStart": "2026-09-28",
+                },
             )
     finally:
         app.dependency_overrides.clear()

@@ -5,8 +5,10 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from project_assistant.modules.daily_reports.models import DailyReport
+from project_assistant.modules.memberships.models import TeamMembership, TeamRole
 from project_assistant.modules.notifications.models import NotificationLog, TeamsConversation
-from project_assistant.modules.users.models import User, UserRole
+from project_assistant.modules.projects.models import Project
+from project_assistant.modules.users.models import User
 
 
 class SqlAlchemyNotificationRepository:
@@ -15,19 +17,27 @@ class SqlAlchemyNotificationRepository:
 
     async def list_expected_reporters(self, team_id: str) -> list[User]:
         result = await self.session.scalars(
-            select(User).where(
-                User.team_id == team_id,
-                User.role == UserRole.MEMBER,
+            select(User)
+            .join(TeamMembership, TeamMembership.user_id == User.id)
+            .where(
+                TeamMembership.team_id == team_id,
+                TeamMembership.role == TeamRole.MEMBER,
+                TeamMembership.active.is_(True),
                 User.active.is_(True),
             )
         )
         return list(result)
 
-    async def has_daily_report(self, user_id: str, target_date: date) -> bool:
+    async def has_daily_report(
+        self, user_id: str, team_id: str, target_date: date
+    ) -> bool:
         report_id = await self.session.scalar(
-            select(DailyReport.id).where(
+            select(DailyReport.id)
+            .join(Project, Project.id == DailyReport.project_id)
+            .where(
                 DailyReport.user_id == user_id,
                 DailyReport.report_date == target_date,
+                Project.team_id == team_id,
             )
         )
         return report_id is not None

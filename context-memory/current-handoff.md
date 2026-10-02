@@ -7,9 +7,10 @@
   append-only audit/status history, multi-team reporting, and Vercel/Supabase demo
   deployment is now captured in
   `docs/superpowers/specs/2026-10-02-teams-bot-action-platform-design.md`.
-- The user approved the written spec. The complete 11-task TDD implementation plan is
-  `docs/superpowers/plans/2026-10-02-teams-bot-action-platform.md` and is awaiting the
-  user's final plan review before application-code changes.
+- The user approved the written spec and 11-task TDD implementation plan at
+  `docs/superpowers/plans/2026-10-02-teams-bot-action-platform.md`. Tasks 1-2 are
+  implemented: roles now live only on active Team Memberships, permission inheritance
+  is centralized, and Daily/Overview/Weekly/Notification reads require Team scope.
 - D-014 records the GPT-first OpenAI-compatible adapter; switching to the company LLM
   is configuration-only after its endpoint passes the shared contract tests.
 - A runnable local web vertical slice is available at `http://localhost:5173` when the
@@ -23,7 +24,7 @@
 
 ## Verification performed
 
-- Backend: final fresh run passed 19 tests; Ruff and strict mypy passed.
+- Backend: Task 2 fresh run passed 26 tests; Ruff and strict mypy passed.
 - Frontend: Vitest, ESLint, TypeScript and Vite production build passed.
 - Containers: API, worker, and web images built; Compose health ordering passed.
 - Live HTTP: web HTML and proxied liveness returned 200; overview returned seeded data;
@@ -35,9 +36,9 @@
 
 ## Next action
 
-Ask the user to review and approve the implementation plan. Then execute natively in
-the current checkout, starting with Task 1 Team Membership schema/migration under the
-RED -> GREEN -> REFACTOR workflow.
+Continue Task 3 under RED -> GREEN -> REFACTOR: create append-only Action Invocation
+and Work Item Status Event tests/models in migration `0004`, then make Daily submission
+persist its domain record, status event, and successful invocation atomically.
 
 ## External blockers
 

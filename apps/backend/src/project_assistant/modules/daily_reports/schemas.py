@@ -10,6 +10,7 @@ class ApiModel(BaseModel):
 
 
 class DailyReportCreate(ApiModel):
+    team_id: str = Field(alias="teamId")
     project_id: str = Field(alias="projectId")
     work_item_id: str = Field(alias="workItemId")
     report_date: date = Field(alias="reportDate")

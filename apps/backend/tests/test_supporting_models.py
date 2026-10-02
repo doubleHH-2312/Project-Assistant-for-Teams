@@ -9,7 +9,7 @@ from project_assistant.core.database import Base
 from project_assistant.modules.notifications.models import NotificationLog
 from project_assistant.modules.teams.models import Team
 from project_assistant.modules.templates.models import ReportTemplate
-from project_assistant.modules.users.models import User, UserRole
+from project_assistant.modules.users.models import User
 from project_assistant.modules.weekly_reports.models import (
     ReportScope,
     WeeklyReport,
@@ -27,8 +27,6 @@ def test_notification_delivery_is_unique_per_user_type_and_target_date() -> None
             external_user_id="entra-1",
             name="Member",
             email="member@example.test",
-            role=UserRole.MEMBER,
-            team_id=team.id,
         )
         session.add_all([team, user])
         session.commit()
@@ -67,8 +65,6 @@ def test_weekly_report_preserves_scope_template_and_source_ids() -> None:
             external_user_id="entra-1",
             name="Member",
             email="member@example.test",
-            role=UserRole.MEMBER,
-            team_id=team.id,
         )
         template = ReportTemplate(
             id="template-1",

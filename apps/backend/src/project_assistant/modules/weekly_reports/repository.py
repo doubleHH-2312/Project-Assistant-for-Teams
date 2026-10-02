@@ -4,8 +4,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from project_assistant.modules.daily_reports.models import DailyReport
+from project_assistant.modules.memberships.models import TeamMembership, TeamRole
+from project_assistant.modules.projects.models import Project
 from project_assistant.modules.templates.models import ReportTemplate
-from project_assistant.modules.users.models import User, UserRole
+from project_assistant.modules.users.models import User
 from project_assistant.modules.weekly_reports.models import (
     ReportScope,
     WeeklyReport,
@@ -28,16 +30,23 @@ class SqlAlchemyWeeklyReportRepository:
             )
         )
 
-    async def get_template(self, template_id: str) -> ReportTemplate | None:
-        return await self.session.get(ReportTemplate, template_id)
+    async def get_template(self, template_id: str, team_id: str) -> ReportTemplate | None:
+        return await self.session.scalar(
+            select(ReportTemplate).where(
+                ReportTemplate.id == template_id,
+                ReportTemplate.team_id == team_id,
+            )
+        )
 
     async def list_daily_reports(
-        self, user_id: str, week_start: date, week_end: date
+        self, user_id: str, team_id: str, week_start: date, week_end: date
     ) -> list[DailyReport]:
         reports = await self.session.scalars(
             select(DailyReport)
+            .join(Project, Project.id == DailyReport.project_id)
             .where(
                 DailyReport.user_id == user_id,
+                Project.team_id == team_id,
                 DailyReport.report_date >= week_start,
                 DailyReport.report_date <= week_end,
             )
@@ -64,7 +73,13 @@ class SqlAlchemyWeeklyReportRepository:
     async def list_expected_member_ids(self, team_id: str) -> list[str]:
         user_ids = await self.session.scalars(
             select(User.id)
-            .where(User.team_id == team_id, User.role == UserRole.MEMBER, User.active.is_(True))
+            .join(TeamMembership, TeamMembership.user_id == User.id)
+            .where(
+                TeamMembership.team_id == team_id,
+                TeamMembership.role == TeamRole.MEMBER,
+                TeamMembership.active.is_(True),
+                User.active.is_(True),
+            )
             .order_by(User.id)
         )
         return list(user_ids)
@@ -84,12 +99,16 @@ class SqlAlchemyWeeklyReportRepository:
         )
         return await self.session.scalar(query.order_by(WeeklyReport.created_at.desc()))
 
-    async def get_by_id(self, report_id: str) -> WeeklyReport | None:
-        return await self.session.get(WeeklyReport, report_id)
+    async def get_by_id(self, report_id: str, team_id: str) -> WeeklyReport | None:
+        return await self.session.scalar(
+            select(WeeklyReport).where(
+                WeeklyReport.id == report_id,
+                WeeklyReport.team_id == team_id,
+            )
+        )
 
     async def save(self, report: WeeklyReport) -> WeeklyReport:
         self.session.add(report)
         await self.session.commit()
         await self.session.refresh(report)
         return report
-

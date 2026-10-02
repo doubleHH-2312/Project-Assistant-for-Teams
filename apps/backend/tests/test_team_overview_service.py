@@ -4,7 +4,7 @@ import pytest
 
 from project_assistant.modules.daily_reports.models import DailyReport, WorkStatus
 from project_assistant.modules.teams.overview import TeamOverviewService
-from project_assistant.modules.users.models import User, UserRole
+from project_assistant.modules.users.models import User
 
 
 class FakeOverviewRepository:
@@ -13,12 +13,14 @@ class FakeOverviewRepository:
         self.reports = reports
 
     async def list_expected_reporters(self, team_id: str) -> list[User]:
-        return [user for user in self.users if user.team_id == team_id and user.active]
+        del team_id
+        return [user for user in self.users if user.active]
 
     async def list_reports_through(
         self, team_id: str, reporting_date: date, history_days: int
     ) -> list[DailyReport]:
-        user_ids = {user.id for user in self.users if user.team_id == team_id}
+        del team_id, history_days
+        user_ids = {user.id for user in self.users}
         return [
             report
             for report in self.reports
@@ -32,8 +34,6 @@ def make_member(index: int) -> User:
         external_user_id=f"entra-{index}",
         name=f"Member {index}",
         email=f"member{index}@example.test",
-        role=UserRole.MEMBER,
-        team_id="team-1",
         active=True,
     )
 

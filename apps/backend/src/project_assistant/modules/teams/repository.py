@@ -4,7 +4,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from project_assistant.modules.daily_reports.models import DailyReport
-from project_assistant.modules.users.models import User, UserRole
+from project_assistant.modules.memberships.models import TeamMembership, TeamRole
+from project_assistant.modules.projects.models import Project
+from project_assistant.modules.users.models import User
 
 
 class SqlAlchemyOverviewRepository:
@@ -14,7 +16,13 @@ class SqlAlchemyOverviewRepository:
     async def list_expected_reporters(self, team_id: str) -> list[User]:
         users = await self.session.scalars(
             select(User)
-            .where(User.team_id == team_id, User.active.is_(True), User.role == UserRole.MEMBER)
+            .join(TeamMembership, TeamMembership.user_id == User.id)
+            .where(
+                TeamMembership.team_id == team_id,
+                TeamMembership.role == TeamRole.MEMBER,
+                TeamMembership.active.is_(True),
+                User.active.is_(True),
+            )
             .order_by(User.name, User.id)
         )
         return list(users)
@@ -24,13 +32,12 @@ class SqlAlchemyOverviewRepository:
     ) -> list[DailyReport]:
         reports = await self.session.scalars(
             select(DailyReport)
-            .join(User, User.id == DailyReport.user_id)
+            .join(Project, Project.id == DailyReport.project_id)
             .where(
-                User.team_id == team_id,
+                Project.team_id == team_id,
                 DailyReport.report_date <= reporting_date,
                 DailyReport.report_date >= reporting_date - timedelta(days=history_days),
             )
             .order_by(DailyReport.report_date, DailyReport.created_at)
         )
         return list(reports)
-

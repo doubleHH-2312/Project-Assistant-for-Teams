@@ -5,7 +5,7 @@ from typing import Protocol
 from pydantic import BaseModel, ConfigDict, Field
 
 from project_assistant.modules.daily_reports.models import DailyReport, WorkStatus
-from project_assistant.modules.users.models import User, UserRole
+from project_assistant.modules.users.models import User
 
 
 class OverviewModel(BaseModel):
@@ -54,9 +54,7 @@ class TeamOverviewService:
 
     async def get_overview(self, team_id: str, reporting_date: date) -> TeamOverview:
         users = [
-            user
-            for user in await self.repository.list_expected_reporters(team_id)
-            if user.active and user.role == UserRole.MEMBER
+            user for user in await self.repository.list_expected_reporters(team_id) if user.active
         ]
         reports = await self.repository.list_reports_through(team_id, reporting_date, 90)
         current = [report for report in reports if report.report_date == reporting_date]

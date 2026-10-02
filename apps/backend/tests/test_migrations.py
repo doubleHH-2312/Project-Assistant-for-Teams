@@ -76,6 +76,10 @@ def test_membership_migration_backfills_legacy_user_scope(tmp_path: Path) -> Non
     assert "tenant_id" in {
         column["name"] for column in inspector.get_columns("users")
     }
+    assert {column["name"] for column in inspector.get_columns("users")} & {
+        "role",
+        "team_id",
+    } == set()
     with engine.connect() as connection:
         membership = connection.execute(
             text(

@@ -7,7 +7,7 @@ from project_assistant.core.auth import get_current_user
 from project_assistant.main import app
 from project_assistant.modules.daily_reports.models import DailyReport
 from project_assistant.modules.daily_reports.router import get_daily_report_service
-from project_assistant.modules.users.models import User, UserRole
+from project_assistant.modules.users.models import User
 
 
 class StubDailyReportService:
@@ -35,8 +35,6 @@ async def test_create_daily_report_returns_camel_case_contract() -> None:
         external_user_id="entra-1",
         name="Member",
         email="member@example.test",
-        role=UserRole.MEMBER,
-        team_id="team-1",
     )
     async def override_actor() -> User:
         return actor
@@ -52,6 +50,7 @@ async def test_create_daily_report_returns_camel_case_contract() -> None:
             response = await client.post(
                 "/api/v1/daily-reports",
                 json={
+                    "teamId": "team-1",
                     "projectId": "project-1",
                     "workItemId": "item-1",
                     "reportDate": "2026-10-01",

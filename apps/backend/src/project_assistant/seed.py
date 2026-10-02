@@ -15,7 +15,6 @@ from project_assistant.modules.model_registry import (  # noqa: F401
     WeeklyReport,
     WorkItem,
 )
-from project_assistant.modules.users.models import UserRole
 from project_assistant.modules.weekly_reports.models import ReportScope, WeeklyReportStatus
 
 
@@ -56,8 +55,6 @@ def seed_database(session: Session, reference_date: date | None = None) -> None:
             external_user_id="entra-lead",
             name="Lan Lead",
             email="lead@example.test",
-            role=UserRole.LEAD,
-            team_id=team.id,
         ),
         User(
             id="user-pm",
@@ -65,8 +62,6 @@ def seed_database(session: Session, reference_date: date | None = None) -> None:
             external_user_id="entra-pm",
             name="Phuong PM",
             email="pm@example.test",
-            role=UserRole.PM,
-            team_id=team.id,
         ),
     ]
     members = [
@@ -76,8 +71,6 @@ def seed_database(session: Session, reference_date: date | None = None) -> None:
             external_user_id=f"entra-member-{index}",
             name=f"Member {index}",
             email=f"member{index}@example.test",
-            role=UserRole.MEMBER,
-            team_id=team.id,
         )
         for index in range(1, 6)
     ]
@@ -88,8 +81,6 @@ def seed_database(session: Session, reference_date: date | None = None) -> None:
         external_user_id="entra-member-6",
         name="Member 6",
         email="member6@example.test",
-        role=UserRole.MEMBER,
-        team_id=platform_team.id,
     )
     users.append(platform_member)
     memberships = [

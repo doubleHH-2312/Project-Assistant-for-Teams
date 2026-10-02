@@ -18,7 +18,9 @@ class ReminderRunResult:
 class NotificationRepository(Protocol):
     async def list_expected_reporters(self, team_id: str) -> list[User]: ...
 
-    async def has_daily_report(self, user_id: str, target_date: date) -> bool: ...
+    async def has_daily_report(
+        self, user_id: str, team_id: str, target_date: date
+    ) -> bool: ...
 
     async def get_conversation(self, user_id: str) -> TeamsConversation | None: ...
 
@@ -39,7 +41,7 @@ class NotificationService:
     ) -> ReminderRunResult:
         sent = failed = skipped_reported = skipped_duplicate = 0
         for user in await self.repository.list_expected_reporters(team_id):
-            if await self.repository.has_daily_report(user.id, target_date):
+            if await self.repository.has_daily_report(user.id, team_id, target_date):
                 skipped_reported += 1
                 continue
             log = await self.repository.claim_notification(
@@ -74,4 +76,3 @@ class NotificationService:
             skipped_reported=skipped_reported,
             skipped_duplicate=skipped_duplicate,
         )
-

@@ -14,30 +14,50 @@ class SqlAlchemyDailyReportRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def get_project(self, project_id: str) -> Project | None:
-        return await self.session.get(Project, project_id)
+    async def get_project(self, project_id: str, team_id: str) -> Project | None:
+        return await self.session.scalar(
+            select(Project).where(Project.id == project_id, Project.team_id == team_id)
+        )
 
-    async def get_work_item(self, work_item_id: str) -> WorkItem | None:
-        return await self.session.get(WorkItem, work_item_id)
+    async def get_work_item(self, work_item_id: str, team_id: str) -> WorkItem | None:
+        return await self.session.scalar(
+            select(WorkItem)
+            .join(Project, Project.id == WorkItem.project_id)
+            .where(WorkItem.id == work_item_id, Project.team_id == team_id)
+        )
 
     async def get_by_key(
-        self, user_id: str, work_item_id: str, report_date: date
+        self, user_id: str, work_item_id: str, report_date: date, team_id: str
     ) -> DailyReport | None:
         return await self.session.scalar(
-            select(DailyReport).where(
+            select(DailyReport)
+            .join(Project, Project.id == DailyReport.project_id)
+            .where(
                 DailyReport.user_id == user_id,
                 DailyReport.work_item_id == work_item_id,
                 DailyReport.report_date == report_date,
+                Project.team_id == team_id,
             )
         )
 
-    async def get_by_id(self, report_id: str) -> DailyReport | None:
-        return await self.session.get(DailyReport, report_id)
+    async def get_by_id(
+        self, report_id: str, user_id: str, team_id: str
+    ) -> DailyReport | None:
+        return await self.session.scalar(
+            select(DailyReport)
+            .join(Project, Project.id == DailyReport.project_id)
+            .where(
+                DailyReport.id == report_id,
+                DailyReport.user_id == user_id,
+                Project.team_id == team_id,
+            )
+        )
 
-    async def list_for_user(self, user_id: str) -> list[DailyReport]:
+    async def list_for_user(self, user_id: str, team_id: str) -> list[DailyReport]:
         result = await self.session.scalars(
             select(DailyReport)
-            .where(DailyReport.user_id == user_id)
+            .join(Project, Project.id == DailyReport.project_id)
+            .where(DailyReport.user_id == user_id, Project.team_id == team_id)
             .order_by(DailyReport.report_date.desc(), DailyReport.updated_at.desc())
         )
         return list(result)
@@ -55,4 +75,3 @@ class SqlAlchemyDailyReportRepository:
             ) from error
         await self.session.refresh(report)
         return report
-

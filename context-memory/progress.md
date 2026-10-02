@@ -20,6 +20,6 @@ Statuses: `READY`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 | ARC-002 Teams bot/action platform design | DONE | Codex | User approved written spec; added OpenAI-compatible GPT-first/company-LLM adapter decision D-014 | Write implementation plan |
 | PLN-001 Teams bot/action implementation plan | DONE | Codex | 11-task TDD plan self-reviewed for spec coverage, type consistency, review risks and deployment gates | User confirmation, then Task 1 |
 | BOT-001 Extensible Teams action platform | IN_PROGRESS | Codex | Approved plan `docs/superpowers/plans/2026-10-02-teams-bot-action-platform.md`; SDD ledger initialized | Execute Tasks 1-11 |
-| RBAC-001 Team-scoped memberships | IN_PROGRESS | Codex | Baseline: 19 backend + 1 frontend tests; Ruff, mypy, ESLint, TypeScript and Vite build pass | Write RED schema/migration tests |
-| AUD-001 Invocation and status-event audit | READY | Unassigned | Pending approved spec/plan | After RBAC-001 |
+| RBAC-001 Team-scoped memberships | DONE | Codex | Tasks 1-2: membership migration/backfill, two-Team seed, inherited permission policy, explicit Team-scoped repositories and legacy scope removal; fresh 26 backend tests + Ruff + strict mypy pass | Use policy in Action Dispatcher |
+| AUD-001 Invocation and status-event audit | IN_PROGRESS | Codex | Approved Task 3 contract; migration slot moved to `0004` after legacy scope removal | Write RED audit/timeline tests |
 | OPS-002 Vercel/Supabase demo deployment | READY | Unassigned | Pending approved spec/plan | After runnable bot/web slice |

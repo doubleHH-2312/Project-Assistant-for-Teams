@@ -34,8 +34,6 @@ def test_membership_roles_are_team_scoped_and_unique() -> None:
             external_user_id="entra-user-1",
             name="Member",
             email="member@example.test",
-            role="MEMBER",
-            team_id=team.id,
         )
         session.add_all([team, user])
         session.flush()

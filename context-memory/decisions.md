@@ -116,3 +116,15 @@ Append new decisions. Do not rewrite existing records; add a superseding record.
 - Impact: Mock remains deterministic for local/CI; every real response is validated
   locally against the report JSON Schema; switching provider is an environment-only
   operation once contract tests pass.
+
+## 2026-10-02 — D-015 Remove legacy User scope before action dispatch
+
+- Decision: Remove `users.role` and `users.team_id` in additive migration `0003` after
+  the membership backfill, before implementing the audit/action platform. Renumber
+  planned audit, multi-team, and Teams-binding migrations to `0004`, `0005`, and
+  `0006`; do not rewrite applied migration history.
+- Reason: Leaving two authorization sources would allow new action handlers to query
+  stale global role data and accidentally cross Team boundaries.
+- Impact: Every authorization decision now requires an active Team Membership. API and
+  repository methods carry explicit Team scope, and downgrade restores the first
+  active membership only as a compatibility fallback.

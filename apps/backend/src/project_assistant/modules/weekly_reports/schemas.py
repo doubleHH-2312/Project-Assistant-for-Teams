@@ -11,6 +11,7 @@ class WeeklyApiModel(BaseModel):
 
 
 class WeeklyGenerateRequest(WeeklyApiModel):
+    team_id: str = Field(alias="teamId")
     scope: ReportScope
     week_start: date = Field(alias="weekStart")
     subject_user_id: str | None = Field(default=None, alias="subjectUserId")
@@ -43,4 +44,3 @@ class WeeklyReportRead(WeeklyApiModel):
     template_version: int = Field(alias="templateVersion")
     supersedes_id: str | None = Field(alias="supersedesId")
     confirmed_at: datetime | None = Field(alias="confirmedAt")
-

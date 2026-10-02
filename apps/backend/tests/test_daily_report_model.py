@@ -9,7 +9,7 @@ from project_assistant.core.database import Base
 from project_assistant.modules.daily_reports.models import DailyReport, WorkStatus
 from project_assistant.modules.projects.models import Project
 from project_assistant.modules.teams.models import Team
-from project_assistant.modules.users.models import User, UserRole
+from project_assistant.modules.users.models import User
 from project_assistant.modules.work_items.models import WorkItem
 
 
@@ -24,8 +24,6 @@ def test_daily_report_rejects_duplicate_user_work_item_and_date() -> None:
             external_user_id="entra-1",
             name="Member One",
             email="member@example.test",
-            role=UserRole.MEMBER,
-            team_id=team.id,
         )
         project = Project(id="project-1", team_id=team.id, name="MVP")
         item = WorkItem(id="item-1", project_id=project.id, code="OPS-001", title="Build")

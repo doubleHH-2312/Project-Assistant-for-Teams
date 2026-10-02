@@ -7,8 +7,9 @@ from jsonschema import ValidationError, validate
 from project_assistant.core.errors import AppError
 from project_assistant.integrations.llm.provider import LLMProvider
 from project_assistant.modules.daily_reports.models import DailyReport
+from project_assistant.modules.memberships.service import AuthorizationService, Permission
 from project_assistant.modules.templates.models import ReportTemplate
-from project_assistant.modules.users.models import User, UserRole
+from project_assistant.modules.users.models import User
 from project_assistant.modules.weekly_reports.models import (
     ReportScope,
     WeeklyReport,
@@ -25,10 +26,10 @@ class WeeklyReportRepository(Protocol):
         self, team_id: str, scope: ReportScope
     ) -> ReportTemplate | None: ...
 
-    async def get_template(self, template_id: str) -> ReportTemplate | None: ...
+    async def get_template(self, template_id: str, team_id: str) -> ReportTemplate | None: ...
 
     async def list_daily_reports(
-        self, user_id: str, week_start: date, week_end: date
+        self, user_id: str, team_id: str, week_start: date, week_end: date
     ) -> list[DailyReport]: ...
 
     async def list_confirmed_member_reports(
@@ -43,13 +44,19 @@ class WeeklyReportRepository(Protocol):
 
     async def save(self, report: WeeklyReport) -> WeeklyReport: ...
 
-    async def get_by_id(self, report_id: str) -> WeeklyReport | None: ...
+    async def get_by_id(self, report_id: str, team_id: str) -> WeeklyReport | None: ...
 
 
 class WeeklyReportService:
-    def __init__(self, repository: WeeklyReportRepository, provider: LLMProvider) -> None:
+    def __init__(
+        self,
+        repository: WeeklyReportRepository,
+        provider: LLMProvider,
+        authorization: AuthorizationService,
+    ) -> None:
         self.repository = repository
         self.provider = provider
+        self.authorization = authorization
 
     async def generate(self, actor: User, request: WeeklyGenerateRequest) -> WeeklyReport:
         if request.week_start.weekday() != 0:
@@ -57,15 +64,19 @@ class WeeklyReportService:
         week_end = request.week_start + timedelta(days=4)
         subject_user_id: str | None
         if request.scope == ReportScope.MEMBER:
+            await self.authorization.require(
+                actor.id, [request.team_id], Permission.GENERATE_OWN_WEEKLY
+            )
             subject_user_id = request.subject_user_id or actor.id
-            if subject_user_id != actor.id and actor.role != UserRole.LEAD:
+            if subject_user_id != actor.id:
                 raise AppError(403, "FORBIDDEN", "Members can generate only their own report")
         else:
-            if actor.role != UserRole.LEAD:
-                raise AppError(403, "FORBIDDEN", "Only a Lead can generate a team report")
+            await self.authorization.require(
+                actor.id, [request.team_id], Permission.GENERATE_TEAM_WEEKLY
+            )
             subject_user_id = None
         existing = await self.repository.find_report(
-            request.scope, actor.team_id, subject_user_id, request.week_start
+            request.scope, request.team_id, subject_user_id, request.week_start
         )
         if existing is not None:
             if existing.status == WeeklyReportStatus.CONFIRMED:
@@ -75,7 +86,7 @@ class WeeklyReportService:
                     "Confirmed reports require a revision",
                 )
             return existing
-        template = await self.repository.get_active_template(actor.team_id, request.scope)
+        template = await self.repository.get_active_template(request.team_id, request.scope)
         if template is None:
             raise AppError(422, "TEMPLATE_NOT_FOUND", "No active template exists for this scope")
         evidence: list[dict[str, Any]]
@@ -84,13 +95,13 @@ class WeeklyReportService:
         if request.scope == ReportScope.MEMBER:
             assert subject_user_id is not None
             daily_reports = await self.repository.list_daily_reports(
-                subject_user_id, request.week_start, week_end
+                subject_user_id, request.team_id, request.week_start, week_end
             )
             evidence = [self._daily_evidence(report) for report in daily_reports]
             input_ids = [report.id for report in daily_reports]
         else:
             member_reports = await self.repository.list_confirmed_member_reports(
-                actor.team_id, request.week_start, week_end
+                request.team_id, request.week_start, week_end
             )
             evidence = [
                 {
@@ -102,7 +113,7 @@ class WeeklyReportService:
             ]
             input_ids = [report.id for report in member_reports]
             confirmed_ids = {report.subject_user_id for report in member_reports}
-            expected_ids = await self.repository.list_expected_member_ids(actor.team_id)
+            expected_ids = await self.repository.list_expected_member_ids(request.team_id)
             missing = sorted(user_id for user_id in expected_ids if user_id not in confirmed_ids)
         result = await self.provider.generate(template.schema_json, evidence)
         try:
@@ -117,7 +128,7 @@ class WeeklyReportService:
         report = WeeklyReport(
             scope=request.scope,
             subject_user_id=subject_user_id,
-            team_id=actor.team_id,
+            team_id=request.team_id,
             week_start=request.week_start,
             week_end=week_end,
             content_json=result.content,
@@ -133,7 +144,7 @@ class WeeklyReportService:
         return await self.repository.save(report)
 
     async def confirm(self, actor: User, report: WeeklyReport) -> WeeklyReport:
-        self._authorize_editor(actor, report)
+        await self._authorize_editor(actor, report)
         if report.status == WeeklyReportStatus.CONFIRMED:
             return report
         report.status = WeeklyReportStatus.CONFIRMED
@@ -141,21 +152,23 @@ class WeeklyReportService:
         report.confirmed_at = datetime.now(UTC)
         return await self.repository.save(report)
 
-    async def get(self, actor: User, report_id: str) -> WeeklyReport:
-        return await self._get_authorized(actor, report_id)
+    async def get(self, actor: User, team_id: str, report_id: str) -> WeeklyReport:
+        return await self._get_authorized(actor, team_id, report_id)
 
-    async def confirm_by_id(self, actor: User, report_id: str) -> WeeklyReport:
-        return await self.confirm(actor, await self._get_authorized(actor, report_id))
+    async def confirm_by_id(
+        self, actor: User, team_id: str, report_id: str
+    ) -> WeeklyReport:
+        return await self.confirm(actor, await self._get_authorized(actor, team_id, report_id))
 
     async def update(
-        self, actor: User, report_id: str, request: WeeklyUpdateRequest
+        self, actor: User, team_id: str, report_id: str, request: WeeklyUpdateRequest
     ) -> WeeklyReport:
-        report = await self._get_authorized(actor, report_id)
+        report = await self._get_authorized(actor, team_id, report_id)
         if report.status == WeeklyReportStatus.CONFIRMED:
             raise AppError(
                 409, "WEEKLY_REPORT_IMMUTABLE", "Confirmed reports cannot be edited"
             )
-        template = await self.repository.get_template(report.template_id)
+        template = await self.repository.get_template(report.template_id, report.team_id)
         if template is None:
             raise AppError(422, "TEMPLATE_NOT_FOUND", "The report template was not found")
         try:
@@ -171,8 +184,10 @@ class WeeklyReportService:
         report.status = WeeklyReportStatus.EDITED
         return await self.repository.save(report)
 
-    async def create_revision(self, actor: User, report_id: str) -> WeeklyReport:
-        report = await self._get_authorized(actor, report_id)
+    async def create_revision(
+        self, actor: User, team_id: str, report_id: str
+    ) -> WeeklyReport:
+        report = await self._get_authorized(actor, team_id, report_id)
         if report.status != WeeklyReportStatus.CONFIRMED:
             raise AppError(409, "REVISION_NOT_REQUIRED", "Only confirmed reports need revisions")
         revision = WeeklyReport(
@@ -194,19 +209,24 @@ class WeeklyReportService:
         )
         return await self.repository.save(revision)
 
-    async def _get_authorized(self, actor: User, report_id: str) -> WeeklyReport:
-        report = await self.repository.get_by_id(report_id)
-        if report is None or report.team_id != actor.team_id:
+    async def _get_authorized(
+        self, actor: User, team_id: str, report_id: str
+    ) -> WeeklyReport:
+        report = await self.repository.get_by_id(report_id, team_id)
+        if report is None:
             raise AppError(404, "WEEKLY_REPORT_NOT_FOUND", "Weekly report was not found")
-        self._authorize_editor(actor, report)
+        await self._authorize_editor(actor, report)
         return report
 
-    @staticmethod
-    def _authorize_editor(actor: User, report: WeeklyReport) -> None:
+    async def _authorize_editor(self, actor: User, report: WeeklyReport) -> None:
         if report.scope == ReportScope.MEMBER and report.subject_user_id != actor.id:
             raise AppError(403, "FORBIDDEN", "Only the subject member can edit this report")
-        if report.scope == ReportScope.TEAM and actor.role != UserRole.LEAD:
-            raise AppError(403, "FORBIDDEN", "Only a Lead can edit a team report")
+        permission = (
+            Permission.GENERATE_OWN_WEEKLY
+            if report.scope == ReportScope.MEMBER
+            else Permission.GENERATE_TEAM_WEEKLY
+        )
+        await self.authorization.require(actor.id, [report.team_id], permission)
 
     @staticmethod
     def _daily_evidence(report: DailyReport) -> dict[str, Any]:
