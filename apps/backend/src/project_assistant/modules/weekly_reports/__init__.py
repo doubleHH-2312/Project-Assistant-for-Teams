@@ -1,0 +1,2 @@
+"""Weekly reporting domain."""
+

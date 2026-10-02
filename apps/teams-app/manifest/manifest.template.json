@@ -1,0 +1,36 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.23/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.23",
+  "version": "0.1.0",
+  "id": "__TEAMS_APP_ID__",
+  "developer": {
+    "name": "VSF",
+    "websiteUrl": "https://__APP_HOSTNAME__",
+    "privacyUrl": "https://__APP_HOSTNAME__/privacy",
+    "termsOfUseUrl": "https://__APP_HOSTNAME__/terms"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Project Assistant",
+    "full": "Project Assistant for Microsoft Teams"
+  },
+  "description": {
+    "short": "Daily project updates and human-reviewed weekly reports.",
+    "full": "Capture daily work evidence, monitor blockers and reporting coverage, and create reviewable weekly project reports from Microsoft Teams."
+  },
+  "accentColor": "#0369A1",
+  "staticTabs": [
+    {
+      "entityId": "project-assistant-home",
+      "name": "Project Assistant",
+      "contentUrl": "https://__APP_HOSTNAME__/",
+      "websiteUrl": "https://__APP_HOSTNAME__/",
+      "scopes": ["personal"]
+    }
+  ],
+  "permissions": ["identity"],
+  "validDomains": ["__APP_HOSTNAME__"]
+}

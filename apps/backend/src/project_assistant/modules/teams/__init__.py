@@ -1,0 +1,2 @@
+"""Team configuration domain."""
+

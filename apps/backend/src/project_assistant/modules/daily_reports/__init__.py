@@ -1,0 +1,2 @@
+"""Daily reporting domain."""
+

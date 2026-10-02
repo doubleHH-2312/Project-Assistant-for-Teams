@@ -1,0 +1,2 @@
+"""User and role domain."""
+
