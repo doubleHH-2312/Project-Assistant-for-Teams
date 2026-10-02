@@ -1,0 +1,1 @@
+"""Action-platform contract tests."""

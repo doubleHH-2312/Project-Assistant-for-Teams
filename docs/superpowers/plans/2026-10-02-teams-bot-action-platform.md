@@ -49,8 +49,8 @@
 - Replace the vendor-specific implementation in `integrations/llm/provider.py` with an OpenAI-compatible adapter and provider factory.
 - Modify existing user, team, daily, weekly, notification, seed, router, and model registry files to consume memberships and explicit Team scope.
 - Create additive Alembic revisions `20261002_0002_team_memberships.py`,
-  `20261002_0003_remove_legacy_user_scope.py`, `20261002_0004_audit_events.py`, and
-  `20261002_0005_weekly_multiteam.py`.
+  `20261002_0003_remove_legacy_user_scope.py`, `20261002_0004_audit_events.py`,
+  `20261002_0005_action_results.py`, and `20261002_0006_weekly_multiteam.py`.
 
 ### API, contract, and frontend
 
@@ -209,6 +209,8 @@
 - Create: `apps/backend/src/project_assistant/modules/actions/registry.py`
 - Create: `apps/backend/src/project_assistant/modules/actions/dispatcher.py`
 - Create: `apps/backend/src/project_assistant/modules/actions/factory.py`
+- Create: `apps/backend/src/project_assistant/modules/actions/results.py`
+- Create: `apps/backend/alembic/versions/20261002_0005_action_results.py`
 - Test: `apps/backend/tests/actions/test_parser.py`
 - Test: `apps/backend/tests/actions/test_registry.py`
 - Test: `apps/backend/tests/actions/test_dispatcher.py`
@@ -218,31 +220,31 @@
 - Produces: `parse_command(text: str, bot_mention_text: str | None) -> ParsedCommand | None`.
 - Produces: `ActionRegistry.register(handler)` and `ActionDispatcher.dispatch(command, context, payload) -> ActionResult`.
 
-- [ ] **Step 1: Write failing parser/registry contract tests**
+- [x] **Step 1: Write failing parser/registry contract tests**
 
   Cover `/daily`, `@Project Assistant /weekly-team`, whitespace/case normalization, aliases, unknown text without storing it, and duplicate name/alias rejection.
 
-- [ ] **Step 2: Write failing dispatcher tests**
+- [x] **Step 2: Write failing dispatcher tests**
 
   Cover context restriction, validation error, denied invocation, successful invocation, handler failure, and replay of the same activity/idempotency key returning the stored result exactly once.
 
-- [ ] **Step 3: Run RED tests**
+- [x] **Step 3: Run RED tests**
 
   Run: `uv run pytest apps/backend/tests/actions -q`
 
   Expected: FAIL because the action module does not exist.
 
-- [ ] **Step 4: Implement transport-neutral contracts, parser, registry, factory, and dispatcher**
+- [x] **Step 4: Implement transport-neutral contracts, parser, registry, factory, and dispatcher**
 
   Dispatcher order is resolve -> start audit -> context check -> payload validation -> permission check -> handler -> persist sanitized outcome. It never imports FastAPI or Microsoft Teams SDK.
 
-- [ ] **Step 5: Run GREEN and strict type checks**
+- [x] **Step 5: Run GREEN and strict type checks**
 
   Run: `uv run pytest apps/backend/tests/actions -q && uv run mypy apps/backend/src && uv run ruff check apps/backend/src apps/backend/tests`
 
   Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
   `git commit -m "feat: add extensible action dispatcher"`
 
@@ -341,13 +343,13 @@
 ## Task 7: Project-grouped member, team, and multi-team weekly reports
 
 **Files:**
-- Create: `apps/backend/alembic/versions/20261002_0005_weekly_multiteam.py`
+- Create: `apps/backend/alembic/versions/20261002_0006_weekly_multiteam.py`
 - Modify: `apps/backend/src/project_assistant/modules/templates/models.py`
 - Modify: `apps/backend/src/project_assistant/modules/weekly_reports/{models,schemas,repository,service,router}.py`
 - Create: `apps/backend/src/project_assistant/modules/actions/handlers/weekly.py`
 - Create: `apps/backend/src/project_assistant/modules/weekly_reports/evidence.py`
 - Create: `apps/backend/src/project_assistant/modules/publications/{models,repository,service}.py`
-- Extend: `apps/backend/alembic/versions/20261002_0005_weekly_multiteam.py` with evidence-link and publication tables
+- Extend: `apps/backend/alembic/versions/20261002_0006_weekly_multiteam.py` with evidence-link and publication tables
 - Modify: `apps/backend/src/project_assistant/seed.py`
 - Test: `apps/backend/tests/test_weekly_evidence.py`
 - Test: `apps/backend/tests/test_multiteam_weekly_service.py`
@@ -399,7 +401,7 @@
 - Create: `apps/backend/src/project_assistant/integrations/teams/cards.py`
 - Modify: `apps/backend/src/project_assistant/integrations/teams/transport.py`
 - Modify: `apps/backend/src/project_assistant/modules/notifications/models.py`
-- Create: `apps/backend/alembic/versions/20261002_0006_teams_bindings.py`
+- Create: `apps/backend/alembic/versions/20261002_0007_teams_bindings.py`
 - Modify: `apps/backend/src/project_assistant/main.py`
 - Modify: `apps/teams-app/manifest/manifest.template.json`
 - Create: `apps/teams-app/adaptive-cards/{daily,team-selector,weekly-review,summary}.json`

@@ -26,6 +26,7 @@ def test_initial_migration_builds_expected_schema(tmp_path: Path) -> None:
         "notification_logs",
         "team_memberships",
         "action_invocations",
+        "action_results",
         "work_item_status_events",
     }.issubset(tables)
     daily_columns = {

@@ -11,7 +11,8 @@
   `docs/superpowers/plans/2026-10-02-teams-bot-action-platform.md`. Tasks 1-2 are
   implemented. Task 3 is also implemented: every Daily create/edit starts an invocation
   and appends a server-timestamped Work Item Status Event; the report, event, and
-  successful outcome commit atomically.
+  successful outcome commit atomically. Task 4 adds the typed parser/registry/dispatcher
+  and persists private Action Results separately for cold-start-safe idempotent replay.
 - D-014 records the GPT-first OpenAI-compatible adapter; switching to the company LLM
   is configuration-only after its endpoint passes the shared contract tests.
 - A runnable local web vertical slice is available at `http://localhost:5173` when the
@@ -25,8 +26,9 @@
 
 ## Verification performed
 
-- Backend: Task 3 fresh run passed 29 tests; Ruff and strict mypy passed. Migration
-  tests cover clean install plus legacy Daily `team_id` backfill.
+- Backend: Task 4 fresh run passed 40 tests; Ruff and strict mypy passed. Migration
+  tests cover clean install, legacy Daily `team_id` backfill, audit, and action-result
+  storage.
 - Frontend: Vitest, ESLint, TypeScript and Vite production build passed.
 - Containers: API, worker, and web images built; Compose health ordering passed.
 - Live HTTP: web HTML and proxied liveness returned 200; overview returned seeded data;
@@ -38,9 +40,9 @@
 
 ## Next action
 
-Continue Task 4 under RED -> GREEN -> REFACTOR: implement the transport-neutral typed
-Action Registry, command parser, factory, and dispatcher using the Team Membership
-policy and Action Invocation lifecycle from Tasks 2-3.
+Continue Task 5 under RED -> GREEN -> REFACTOR: replace the old internal-only LLM
+branch with one GPT-first OpenAI-compatible provider/factory, bounded resilience, and
+local JSON Schema validation for both GPT and the future company endpoint.
 
 ## External blockers
 

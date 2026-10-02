@@ -128,3 +128,15 @@ Append new decisions. Do not rewrite existing records; add a superseding record.
 - Impact: Every authorization decision now requires an active Team Membership. API and
   repository methods carry explicit Team scope, and downgrade restores the first
   active membership only as a compatibility fallback.
+
+## 2026-10-02 — D-016 Persist action results outside audit metadata
+
+- Decision: Persist the transport-neutral `ActionResult` in a dedicated
+  `action_results` table keyed by invocation. Keep audit metadata sanitized and use
+  the stored result for idempotent replay across process restarts and Vercel cold
+  starts.
+- Reason: An in-memory replay cache cannot satisfy Teams retry semantics on a
+  serverless deployment, while placing complete presentation payloads in audit
+  metadata would violate the audit-data minimization rule.
+- Impact: Migration `0005` is assigned to action results. Planned multi-team and Teams
+  binding migrations move to `0006` and `0007` without rewriting prior revisions.
