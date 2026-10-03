@@ -135,6 +135,17 @@ Append new decisions. Do not rewrite existing records; add a superseding record.
   `action_results` table keyed by invocation. Keep audit metadata sanitized and use
   the stored result for idempotent replay across process restarts and Vercel cold
   starts.
+
+## 2026-10-03 — D-017 Derive blocker dates only from status events
+
+- Decision: Daily Summary and future weekly evidence derive exact blocker dates from
+  append-only `WorkItemStatusEvent` rows. They do not infer trigger time from mutable
+  Daily Reports. Synthetic demo reports receive deterministic matching invocation and
+  event rows during seed.
+- Reason: A business report date and the actual server-recorded trigger date are
+  separate facts; reconstructing missing trigger timestamps would create false history.
+- Impact: New and seeded data have reproducible blocker timelines. Legacy reports from
+  before event capture remain visible as reports but do not fabricate event dates.
 - Reason: An in-memory replay cache cannot satisfy Teams retry semantics on a
   serverless deployment, while placing complete presentation payloads in audit
   metadata would violate the audit-data minimization rule.

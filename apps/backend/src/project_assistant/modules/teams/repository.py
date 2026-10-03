@@ -3,6 +3,7 @@ from datetime import date, timedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from project_assistant.modules.audit.models import WorkItemStatusEvent
 from project_assistant.modules.daily_reports.models import DailyReport
 from project_assistant.modules.memberships.models import TeamMembership, TeamRole
 from project_assistant.modules.projects.models import Project
@@ -41,3 +42,18 @@ class SqlAlchemyOverviewRepository:
             .order_by(DailyReport.report_date, DailyReport.created_at)
         )
         return list(reports)
+
+    async def list_status_events_through(
+        self, team_id: str, reporting_date: date, history_days: int
+    ) -> list[WorkItemStatusEvent]:
+        events = await self.session.scalars(
+            select(WorkItemStatusEvent)
+            .where(
+                WorkItemStatusEvent.team_id == team_id,
+                WorkItemStatusEvent.local_date <= reporting_date,
+                WorkItemStatusEvent.local_date
+                >= reporting_date - timedelta(days=history_days),
+            )
+            .order_by(WorkItemStatusEvent.recorded_at, WorkItemStatusEvent.id)
+        )
+        return list(events)

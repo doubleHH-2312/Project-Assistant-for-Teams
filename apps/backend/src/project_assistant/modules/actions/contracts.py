@@ -25,7 +25,7 @@ class ActionDefinition:
     name: str
     aliases: tuple[str, ...]
     allowed_contexts: frozenset[ConversationContext]
-    required_permission: Permission
+    required_permission: Permission | None
     input_schema: type[BaseModel]
 
 

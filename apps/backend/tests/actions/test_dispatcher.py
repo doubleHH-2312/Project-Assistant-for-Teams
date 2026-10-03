@@ -16,13 +16,14 @@ from project_assistant.modules.actions.parser import ParsedCommand
 from project_assistant.modules.actions.registry import ActionRegistry
 from project_assistant.modules.audit.models import ActionInvocation, InvocationStatus
 from project_assistant.modules.audit.service import AuditService
+from project_assistant.modules.memberships.models import TeamMembership, TeamRole
 from project_assistant.modules.memberships.service import Permission
 
 
 class DailyInput(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    team_id: str = Field(alias="teamId")
+    team_id: str | None = Field(default=None, alias="teamId")
     summary: str = Field(min_length=1)
 
 
@@ -60,6 +61,18 @@ class FakeAuthorization:
         if self.error is not None:
             raise self.error
         return {}
+
+    async def list_permitted_teams(
+        self, actor_id: str, permission: Permission
+    ) -> list[TeamMembership]:
+        return [
+            TeamMembership(
+                id="membership-1",
+                user_id=actor_id,
+                team_id="team-1",
+                role=TeamRole.MEMBER,
+            )
+        ]
 
 
 class FakeResultStore:
@@ -115,13 +128,14 @@ def action_context(
     *,
     conversation_type: ConversationType = ConversationType.PERSONAL,
     idempotency_key: str = "activity-1:daily",
+    current_team_id: str | None = "team-1",
 ) -> ActionContext:
     return ActionContext(
         actor_id="user-1",
         tenant_id="tenant-1",
         conversation_id="conversation-1",
         conversation_type=conversation_type,
-        current_team_id="team-1",
+        current_team_id=current_team_id,
         correlation_id="correlation-1",
         idempotency_key=idempotency_key,
         timezone="Asia/Ho_Chi_Minh",
@@ -216,6 +230,24 @@ async def test_permission_denial_is_recorded_without_running_handler() -> None:
     invocation = next(iter(audit_repository.invocations.values()))
     assert denied.value.code == "FORBIDDEN"
     assert invocation.status == InvocationStatus.DENIED
+    assert handler.calls == 0
+
+
+@pytest.mark.asyncio
+async def test_personal_action_without_team_returns_permitted_team_selection() -> None:
+    handler = StubHandler()
+    dispatcher, audit_repository, _, _, _ = make_dispatcher(handler)
+
+    result = await dispatcher.dispatch(
+        ParsedCommand(name="daily", arguments=()),
+        action_context(current_team_id=None),
+        {"summary": "Worked on the API"},
+    )
+
+    invocation = next(iter(audit_repository.invocations.values()))
+    assert result.kind == "team_selection"
+    assert result.data["teamIds"] == ["team-1"]
+    assert invocation.status == InvocationStatus.SUCCEEDED
     assert handler.calls == 0
 
 

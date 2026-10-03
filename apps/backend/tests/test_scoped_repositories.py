@@ -173,6 +173,10 @@ async def test_repositories_never_cross_explicit_team_scope() -> None:
         ]
         assert await daily.get_project("project-b", "team-a") is None
         assert await daily.get_work_item("item-b", "team-a") is None
+        assert [project.id for project in await daily.list_active_projects("team-a")] == [
+            "project-a"
+        ]
+        assert [item.id for item in await daily.list_work_items("team-a")] == ["item-a"]
         assert [user.id for user in await overview.list_expected_reporters("team-a")] == [
             "user-1"
         ]

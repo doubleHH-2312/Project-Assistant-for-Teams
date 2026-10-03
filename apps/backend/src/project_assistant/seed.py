@@ -1,9 +1,15 @@
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
 from project_assistant.core.config import get_settings
+from project_assistant.modules.audit.models import (
+    ActionInvocation,
+    InvocationStatus,
+    WorkItemStatusEvent,
+)
 from project_assistant.modules.daily_reports.models import DailyReport, WorkStatus
 from project_assistant.modules.memberships.models import TeamMembership, TeamRole
 from project_assistant.modules.model_registry import (  # noqa: F401
@@ -352,6 +358,68 @@ def seed_database(session: Session, reference_date: date | None = None) -> None:
             )
         )
     session.add_all(reports)
+    session.flush()
+
+    invocation_rows: list[ActionInvocation] = []
+    status_events: list[WorkItemStatusEvent] = []
+    prior_event_by_work_item: dict[tuple[str, str], str] = {}
+    team_timezone = ZoneInfo(team.timezone)
+    for report in reports:
+        invocation_id = f"seed-invocation-{report.id}"
+        event_id = f"seed-event-{report.id}"
+        local_datetime = datetime.combine(
+            report.report_date,
+            time(hour=9),
+            tzinfo=team_timezone,
+        )
+        recorded_at = local_datetime.astimezone(UTC)
+        invocation_rows.append(
+            ActionInvocation(
+                id=invocation_id,
+                action="daily",
+                actor_id=report.user_id,
+                tenant_id=tenant_id,
+                team_id=report.team_id,
+                project_id=report.project_id,
+                conversation_id="seed:demo",
+                conversation_type="SEED",
+                triggered_at=recorded_at,
+                local_datetime=local_datetime,
+                local_date=report.report_date,
+                timezone=team.timezone,
+                correlation_id=f"seed-{report.id}",
+                idempotency_key=f"seed-{report.id}",
+                status=InvocationStatus.SUCCEEDED,
+                result_ref=report.id,
+                metadata_json={"seed": True},
+                completed_at=recorded_at,
+            )
+        )
+        event_key = (report.user_id, report.work_item_id)
+        status_events.append(
+            WorkItemStatusEvent(
+                id=event_id,
+                daily_report_id=report.id,
+                action_invocation_id=invocation_id,
+                team_id=report.team_id,
+                project_id=report.project_id,
+                work_item_id=report.work_item_id,
+                user_id=report.user_id,
+                status=report.status,
+                effective_blocker=report.effective_blocker,
+                business_date=report.report_date,
+                recorded_at=recorded_at,
+                local_datetime=local_datetime,
+                local_date=report.report_date,
+                timezone=team.timezone,
+                source="SEED",
+                supersedes_event_id=prior_event_by_work_item.get(event_key),
+            )
+        )
+        prior_event_by_work_item[event_key] = event_id
+    session.add_all(invocation_rows)
+    session.flush()
+    session.add_all(status_events)
 
     week_start = prior_days[0] - timedelta(days=prior_days[0].weekday())
     weekly_reports = [

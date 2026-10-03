@@ -10,7 +10,7 @@ from project_assistant.modules.audit.models import (
     InvocationStatus,
     WorkItemStatusEvent,
 )
-from project_assistant.modules.daily_reports.models import DailyReport
+from project_assistant.modules.daily_reports.models import DailyReport, WorkStatus
 from project_assistant.modules.projects.models import Project
 from project_assistant.modules.teams.models import Team
 from project_assistant.modules.work_items.models import WorkItem
@@ -34,6 +34,23 @@ class SqlAlchemyDailyReportRepository:
             .join(Project, Project.id == WorkItem.project_id)
             .where(WorkItem.id == work_item_id, Project.team_id == team_id)
         )
+
+    async def list_active_projects(self, team_id: str) -> list[Project]:
+        projects = await self.session.scalars(
+            select(Project)
+            .where(Project.team_id == team_id, Project.status == "ACTIVE")
+            .order_by(Project.name, Project.id)
+        )
+        return list(projects)
+
+    async def list_work_items(self, team_id: str) -> list[WorkItem]:
+        work_items = await self.session.scalars(
+            select(WorkItem)
+            .join(Project, Project.id == WorkItem.project_id)
+            .where(Project.team_id == team_id, Project.status == "ACTIVE")
+            .order_by(WorkItem.code, WorkItem.id)
+        )
+        return list(work_items)
 
     async def get_by_key(
         self, user_id: str, work_item_id: str, report_date: date, team_id: str
@@ -67,6 +84,34 @@ class SqlAlchemyDailyReportRepository:
             .order_by(DailyReport.report_date.desc(), DailyReport.updated_at.desc())
         )
         return list(result)
+
+    async def list_history(
+        self,
+        user_id: str,
+        team_id: str,
+        project_id: str | None,
+        date_from: date,
+        date_to: date,
+        status: WorkStatus | None,
+    ) -> list[DailyReport]:
+        statement = select(DailyReport).where(
+            DailyReport.user_id == user_id,
+            DailyReport.team_id == team_id,
+            DailyReport.report_date >= date_from,
+            DailyReport.report_date <= date_to,
+        )
+        if project_id is not None:
+            statement = statement.where(DailyReport.project_id == project_id)
+        if status is not None:
+            statement = statement.where(DailyReport.status == status)
+        reports = await self.session.scalars(
+            statement.order_by(
+                DailyReport.report_date.desc(),
+                DailyReport.project_id,
+                DailyReport.work_item_id,
+            )
+        )
+        return list(reports)
 
     async def get_latest_event(
         self, daily_report_id: str

@@ -8,14 +8,19 @@
   deployment is now captured in
   `docs/superpowers/specs/2026-10-02-teams-bot-action-platform-design.md`.
 - The user approved the written spec and 11-task TDD implementation plan at
-  `docs/superpowers/plans/2026-10-02-teams-bot-action-platform.md`. Tasks 1-2 are
-  implemented. Task 3 is also implemented: every Daily create/edit starts an invocation
+  `docs/superpowers/plans/2026-10-02-teams-bot-action-platform.md`. Tasks 1-6 are
+  implemented. Every Daily create/edit starts an invocation
   and appends a server-timestamped Work Item Status Event; the report, event, and
   successful outcome commit atomically. Task 4 adds the typed parser/registry/dispatcher
   and persists private Action Results separately for cold-start-safe idempotent replay.
 - Task 5 replaces the former internal-only branch with one OpenAI-compatible provider
   for GPT and the future company endpoint. Provider switching is configuration-only;
   no real credential is stored or used in tests.
+- Task 6 registers concrete `/daily`, `/history`, `/daily-summary`, and `/help`
+  handlers. Personal chat prompts for Team selection, group-bound scope cannot be
+  overridden, Daily forms expose only active Team projects/work items, and blocker
+  summaries use append-only status event dates. Seed data now carries matching
+  invocation and event records.
 - D-014 records the GPT-first OpenAI-compatible adapter; switching to the company LLM
   is configuration-only after its endpoint passes the shared contract tests.
 - A runnable local web vertical slice is available at `http://localhost:5173` when the
@@ -29,7 +34,7 @@
 
 ## Verification performed
 
-- Backend: Task 5 fresh run passed 54 tests; Ruff and strict mypy passed. Migration
+- Backend: Task 6 fresh run passed 62 tests; Ruff and strict mypy passed. Migration
   tests cover clean install, legacy Daily `team_id` backfill, audit, and action-result
   storage.
 - Frontend: Vitest, ESLint, TypeScript and Vite production build passed.
@@ -43,9 +48,9 @@
 
 ## Next action
 
-Continue Task 6 under RED -> GREEN -> REFACTOR: register concrete `/daily`, `/history`,
-`/daily-summary`, and `/help` handlers; derive report date from Team timezone, enforce
-the backfill window, and expose blocker event dates from the append-only timeline.
+Continue Task 7 under RED -> GREEN -> REFACTOR: build project-grouped Member, Team,
+and Multi-team weekly evidence; add evidence links, multi-team persistence, explicit
+publication, and the three weekly action handlers.
 
 ## External blockers
 

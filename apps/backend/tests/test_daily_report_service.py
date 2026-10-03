@@ -27,6 +27,7 @@ class FakeDailyReportRepository:
             tenant_id="tenant-1",
             name="Team One",
             timezone="Asia/Ho_Chi_Minh",
+            backfill_window_days=7,
         )
         self.projects = {"project-1": Project(id="project-1", team_id="team-1", name="MVP")}
         self.work_items = {

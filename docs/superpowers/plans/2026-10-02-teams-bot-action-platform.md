@@ -312,31 +312,31 @@
 - Produces history filters `team_id`, optional `project_id`, `date_from`, `date_to`, and `status` with a seven-reporting-day default.
 - Produces Daily date resolution from Team timezone when absent and backfill validation against `backfill_window_days`.
 
-- [ ] **Step 1: Write failing Daily action tests**
+- [x] **Step 1: Write failing Daily action tests**
 
   Cover Team-bound context, personal-chat Team selection, payload Team mismatch rejection, server-derived local date, allowed seven-day backfill, older rejection, and atomic event/audit behavior.
 
-- [ ] **Step 2: Write failing History/Overview/Help tests**
+- [x] **Step 2: Write failing History/Overview/Help tests**
 
   Assert own-history only, grouping by date/Project/Work Item, exact blocker event dates in Daily Summary, role denial, and permission-filtered help output.
 
-- [ ] **Step 3: Run RED tests**
+- [x] **Step 3: Run RED tests**
 
   Run: `uv run pytest apps/backend/tests/actions/test_daily_actions.py apps/backend/tests/actions/test_history_actions.py apps/backend/tests/actions/test_overview_actions.py -q`
 
   Expected: FAIL on missing handlers and Team-aware use cases.
 
-- [ ] **Step 4: Implement handlers and Team-aware service methods**
+- [x] **Step 4: Implement handlers and Team-aware service methods**
 
   Handlers translate typed action payloads to existing services and return transport-neutral form, list, or summary results. They contain no SQL and no Teams SDK types.
 
-- [ ] **Step 5: Run GREEN and daily/overview regressions**
+- [x] **Step 5: Run GREEN and daily/overview regressions**
 
   Run: `uv run pytest apps/backend/tests/actions apps/backend/tests/test_daily_report_service.py apps/backend/tests/test_team_overview_service.py -q`
 
   Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
   `git commit -m "feat: expose daily reporting actions"`
 

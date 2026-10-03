@@ -4,6 +4,11 @@ from sqlalchemy import create_engine, event, func, select
 from sqlalchemy.orm import Session
 
 from project_assistant.core.database import Base
+from project_assistant.modules.audit.models import (
+    ActionInvocation,
+    InvocationStatus,
+    WorkItemStatusEvent,
+)
 from project_assistant.modules.daily_reports.models import DailyReport, WorkStatus
 from project_assistant.modules.projects.models import Project
 from project_assistant.modules.teams.models import Team
@@ -36,6 +41,32 @@ def test_seed_is_idempotent_and_contains_demo_scenarios() -> None:
                 select(func.count())
                 .select_from(DailyReport)
                 .where(DailyReport.status == WorkStatus.BLOCKED)
+            )
+            >= 2
+        )
+        report_count = session.scalar(select(func.count()).select_from(DailyReport))
+        assert report_count is not None
+        assert (
+            session.scalar(select(func.count()).select_from(ActionInvocation))
+            == report_count
+        )
+        assert (
+            session.scalar(select(func.count()).select_from(WorkItemStatusEvent))
+            == report_count
+        )
+        assert (
+            session.scalar(
+                select(func.count())
+                .select_from(ActionInvocation)
+                .where(ActionInvocation.status == InvocationStatus.SUCCEEDED)
+            )
+            == report_count
+        )
+        assert (
+            session.scalar(
+                select(func.count())
+                .select_from(WorkItemStatusEvent)
+                .where(WorkItemStatusEvent.status == WorkStatus.BLOCKED)
             )
             >= 2
         )

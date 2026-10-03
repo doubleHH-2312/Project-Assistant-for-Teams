@@ -10,13 +10,21 @@ from project_assistant.modules.audit.models import (
     WorkItemStatusEvent,
 )
 from project_assistant.modules.audit.service import AuditService
-from project_assistant.modules.daily_reports.models import DailyReport
-from project_assistant.modules.daily_reports.schemas import DailyReportCreate, DailyReportUpdate
+from project_assistant.modules.daily_reports.models import DailyReport, WorkStatus
+from project_assistant.modules.daily_reports.schemas import (
+    DailyHistoryFilters,
+    DailyReportCreate,
+    DailyReportUpdate,
+)
 from project_assistant.modules.memberships.service import AuthorizationService, Permission
 from project_assistant.modules.projects.models import Project
 from project_assistant.modules.teams.models import Team
-from project_assistant.modules.users.models import User
 from project_assistant.modules.work_items.models import WorkItem
+
+
+class ActorIdentity(Protocol):
+    @property
+    def id(self) -> str: ...
 
 
 class DailyReportRepository(Protocol):
@@ -25,6 +33,10 @@ class DailyReportRepository(Protocol):
     async def get_project(self, project_id: str, team_id: str) -> Project | None: ...
 
     async def get_work_item(self, work_item_id: str, team_id: str) -> WorkItem | None: ...
+
+    async def list_active_projects(self, team_id: str) -> list[Project]: ...
+
+    async def list_work_items(self, team_id: str) -> list[WorkItem]: ...
 
     async def get_by_key(
         self, user_id: str, work_item_id: str, report_date: date, team_id: str
@@ -35,6 +47,16 @@ class DailyReportRepository(Protocol):
     ) -> DailyReport | None: ...
 
     async def list_for_user(self, user_id: str, team_id: str) -> list[DailyReport]: ...
+
+    async def list_history(
+        self,
+        user_id: str,
+        team_id: str,
+        project_id: str | None,
+        date_from: date,
+        date_to: date,
+        status: WorkStatus | None,
+    ) -> list[DailyReport]: ...
 
     async def get_latest_event(
         self, daily_report_id: str
@@ -61,7 +83,7 @@ class DailyReportService:
 
     async def create(
         self,
-        actor: User,
+        actor: ActorIdentity,
         team_id: str,
         request: DailyReportCreate,
         audit: RequestAuditContext,
@@ -72,6 +94,14 @@ class DailyReportService:
                 raise AppError(422, "TEAM_SCOPE_MISMATCH", "Payload Team does not match scope")
             await self.authorization.require(
                 actor.id, [team_id], Permission.SUBMIT_OWN_DAILY
+            )
+            team = await self.repository.get_team(team_id)
+            if team is None:
+                raise AppError(404, "TEAM_NOT_FOUND", "Team was not found")
+            report_date = resolve_report_date(
+                request.report_date,
+                invocation.local_date,
+                team.backfill_window_days,
             )
             project = await self.repository.get_project(request.project_id, team_id)
             work_item = await self.repository.get_work_item(request.work_item_id, team_id)
@@ -84,7 +114,7 @@ class DailyReportService:
                     404, "WORK_ITEM_NOT_FOUND", "Project or work item was not found"
                 )
             existing = await self.repository.get_by_key(
-                actor.id, request.work_item_id, request.report_date, team_id
+                actor.id, request.work_item_id, report_date, team_id
             )
             if existing is not None:
                 raise AppError(
@@ -99,7 +129,7 @@ class DailyReportService:
                 user_id=actor.id,
                 project_id=request.project_id,
                 work_item_id=request.work_item_id,
-                report_date=request.report_date,
+                report_date=report_date,
                 status=request.status,
                 work_summary=request.work_summary,
                 blocker=request.blocker,
@@ -120,7 +150,7 @@ class DailyReportService:
 
     async def update(
         self,
-        actor: User,
+        actor: ActorIdentity,
         team_id: str,
         report_id: str,
         request: DailyReportUpdate,
@@ -155,17 +185,65 @@ class DailyReportService:
             await self.audit_service.fail(invocation.id, "INTERNAL_ERROR")
             raise
 
-    async def list_for_user(self, actor: User, team_id: str) -> list[DailyReport]:
+    async def list_for_user(
+        self, actor: ActorIdentity, team_id: str
+    ) -> list[DailyReport]:
         await self.authorization.require(actor.id, [team_id], Permission.VIEW_OWN_HISTORY)
         return await self.repository.list_for_user(actor.id, team_id)
+
+    async def get_form_options(
+        self, actor: ActorIdentity, team_id: str
+    ) -> dict[str, list[dict[str, str]]]:
+        await self.authorization.require(
+            actor.id, [team_id], Permission.SUBMIT_OWN_DAILY
+        )
+        projects = await self.repository.list_active_projects(team_id)
+        work_items = await self.repository.list_work_items(team_id)
+        return {
+            "projects": [
+                {"id": project.id, "name": project.name} for project in projects
+            ],
+            "workItems": [
+                {
+                    "id": item.id,
+                    "projectId": item.project_id,
+                    "code": item.code,
+                    "title": item.title,
+                }
+                for item in work_items
+            ],
+        }
+
+    async def list_history(
+        self, actor: ActorIdentity, filters: DailyHistoryFilters
+    ) -> list[DailyReport]:
+        await self.authorization.require(
+            actor.id, [filters.team_id], Permission.VIEW_OWN_HISTORY
+        )
+        if filters.date_from > filters.date_to:
+            raise AppError(422, "HISTORY_DATE_RANGE_INVALID", "Date range is invalid")
+        return await self.repository.list_history(
+            actor.id,
+            filters.team_id,
+            filters.project_id,
+            filters.date_from,
+            filters.date_to,
+            filters.status,
+        )
 
     async def _start_invocation(
         self, team_id: str, context: RequestAuditContext
     ) -> ActionInvocation:
         team = await self.repository.get_team(team_id)
         timezone = team.timezone if team is not None else context.timezone
-        return await self.audit_service.start(
+        invocation = await self.audit_service.start(
             replace(context, team_id=team_id, timezone=timezone)
+        )
+        return await self.audit_service.enrich_scope(
+            invocation.id,
+            team_id=team_id,
+            project_id=context.project_id,
+            timezone=timezone,
         )
 
     async def _record_failure(
@@ -202,3 +280,21 @@ class DailyReportService:
             source=source,
             supersedes_event_id=supersedes_event_id,
         )
+
+
+def resolve_report_date(
+    requested_date: date | None,
+    local_today: date,
+    backfill_window_days: int,
+) -> date:
+    report_date = requested_date or local_today
+    if report_date > local_today:
+        raise AppError(422, "REPORT_DATE_IN_FUTURE", "Report date cannot be in the future")
+    if (local_today - report_date).days > backfill_window_days:
+        raise AppError(
+            422,
+            "REPORT_DATE_OUTSIDE_BACKFILL_WINDOW",
+            "Report date is outside the Team backfill window",
+            {"backfillWindowDays": backfill_window_days},
+        )
+    return report_date

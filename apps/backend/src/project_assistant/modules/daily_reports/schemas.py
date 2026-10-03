@@ -13,7 +13,7 @@ class DailyReportCreate(ApiModel):
     team_id: str = Field(alias="teamId")
     project_id: str = Field(alias="projectId")
     work_item_id: str = Field(alias="workItemId")
-    report_date: date = Field(alias="reportDate")
+    report_date: date | None = Field(default=None, alias="reportDate")
     status: WorkStatus
     work_summary: str = Field(alias="workSummary", min_length=1, max_length=4000)
     blocker: str | None = Field(default=None, max_length=4000)
@@ -29,6 +29,14 @@ class DailyReportUpdate(ApiModel):
     next_action: str | None = Field(
         default=None, alias="nextAction", min_length=1, max_length=2000
     )
+
+
+class DailyHistoryFilters(ApiModel):
+    team_id: str = Field(alias="teamId")
+    project_id: str | None = Field(default=None, alias="projectId")
+    date_from: date = Field(alias="dateFrom")
+    date_to: date = Field(alias="dateTo")
+    status: WorkStatus | None = None
 
 
 class DailyReportRead(ApiModel):

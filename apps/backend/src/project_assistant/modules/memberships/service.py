@@ -37,6 +37,8 @@ ROLE_PERMISSIONS: dict[TeamRole, frozenset[Permission]] = {
 class MembershipRepository(Protocol):
     async def get_active(self, user_id: str, team_id: str) -> TeamMembership | None: ...
 
+    async def list_active_for_user(self, user_id: str) -> list[TeamMembership]: ...
+
 
 class AuthorizationService:
     def __init__(self, repository: MembershipRepository) -> None:
@@ -70,3 +72,20 @@ class AuthorizationService:
                     "The same eligible role is required for every selected Team",
                 )
         return memberships
+
+    async def list_permissions(self, actor_id: str) -> frozenset[Permission]:
+        memberships = await self.repository.list_active_for_user(actor_id)
+        permissions: set[Permission] = set()
+        for membership in memberships:
+            permissions.update(ROLE_PERMISSIONS[membership.role])
+        return frozenset(permissions)
+
+    async def list_permitted_teams(
+        self, actor_id: str, permission: Permission
+    ) -> list[TeamMembership]:
+        memberships = await self.repository.list_active_for_user(actor_id)
+        return [
+            membership
+            for membership in memberships
+            if permission in ROLE_PERMISSIONS[membership.role]
+        ]

@@ -81,6 +81,33 @@ class AuditService:
             result_ref=result_ref,
         )
 
+    async def enrich_scope(
+        self,
+        invocation_id: str,
+        *,
+        team_id: str | None,
+        project_id: str | None,
+        timezone: str,
+    ) -> ActionInvocation:
+        invocation = await self.repository.get(invocation_id)
+        if invocation is None:
+            raise AppError(404, "INVOCATION_NOT_FOUND", "Action invocation was not found")
+        if invocation.status != InvocationStatus.PENDING:
+            return invocation
+        try:
+            triggered_at = invocation.triggered_at
+            if triggered_at.tzinfo is None:
+                triggered_at = triggered_at.replace(tzinfo=UTC)
+            local_datetime = triggered_at.astimezone(ZoneInfo(timezone))
+        except ZoneInfoNotFoundError as error:
+            raise AppError(422, "TIMEZONE_INVALID", "The Team timezone is invalid") from error
+        invocation.team_id = team_id
+        invocation.project_id = project_id
+        invocation.timezone = timezone
+        invocation.local_datetime = local_datetime
+        invocation.local_date = local_datetime.date()
+        return await self.repository.save(invocation)
+
     async def fail(self, invocation_id: str, code: str) -> ActionInvocation:
         return await self._finish(invocation_id, InvocationStatus.FAILED, error_code=code)
 

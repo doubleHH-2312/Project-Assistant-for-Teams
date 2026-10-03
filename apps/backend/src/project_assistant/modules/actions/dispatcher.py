@@ -30,6 +30,10 @@ class AuthorizationPolicy(Protocol):
         permission: Permission,
     ) -> dict[str, TeamMembership]: ...
 
+    async def list_permitted_teams(
+        self, actor_id: str, permission: Permission
+    ) -> list[TeamMembership]: ...
+
 
 class ActionDispatcher:
     def __init__(
@@ -108,15 +112,40 @@ class ActionDispatcher:
                     },
                 ) from error
             team_ids = self._team_ids(validated, context)
-            try:
-                await self.authorization.require(
-                    context.actor_id,
-                    team_ids,
-                    definition.required_permission,
-                )
-            except AppError as error:
-                await self.audit_service.deny(invocation.id, error.code)
-                raise
+            if definition.required_permission is not None:
+                if not team_ids:
+                    memberships = await self.authorization.list_permitted_teams(
+                        context.actor_id, definition.required_permission
+                    )
+                    if not memberships:
+                        raise AppError(404, "TEAM_NOT_FOUND", "No eligible Team was found")
+                    result = ActionResult(
+                        kind="team_selection",
+                        message="Select a Team to continue.",
+                        data={
+                            "action": definition.name,
+                            "teamIds": [membership.team_id for membership in memberships],
+                        },
+                    )
+                    result = await self.result_store.save(invocation.id, result)
+                    await self.audit_service.succeed(invocation.id)
+                    return result
+                try:
+                    await self.authorization.require(
+                        context.actor_id,
+                        team_ids,
+                        definition.required_permission,
+                    )
+                except AppError as error:
+                    await self.audit_service.deny(invocation.id, error.code)
+                    raise
+                if len(team_ids) == 1:
+                    invocation = await self.audit_service.enrich_scope(
+                        invocation.id,
+                        team_id=team_ids[0],
+                        project_id=getattr(validated, "project_id", None),
+                        timezone=context.timezone,
+                    )
             result = await handler.execute(context, validated)
             result = await self.result_store.save(invocation.id, result)
             completed = await self.audit_service.succeed(invocation.id, result.result_ref)
@@ -179,6 +208,4 @@ class ActionDispatcher:
                     "Payload Team does not match the bound conversation Team",
                 )
             team_ids = [context.current_team_id]
-        if not team_ids:
-            raise AppError(422, "TEAM_SCOPE_REQUIRED", "At least one Team is required")
         return sorted(set(team_ids))

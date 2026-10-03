@@ -26,6 +26,7 @@ class TimelineRepository:
             tenant_id="tenant-1",
             name="Team One",
             timezone="Asia/Ho_Chi_Minh",
+            backfill_window_days=7,
         )
         self.project = Project(id="project-1", team_id="team-1", name="Project One")
         self.work_item = WorkItem(
@@ -210,3 +211,5 @@ async def test_blocker_date_survives_later_daily_report_update() -> None:
     assert repository.events[1].status == WorkStatus.IN_PROGRESS
     assert repository.events[1].local_date == date(2026, 10, 6)
     assert repository.events[1].supersedes_event_id == first_event.id
+    assert repository.report is not None
+    assert repository.report.next_action == "Finish integration"
