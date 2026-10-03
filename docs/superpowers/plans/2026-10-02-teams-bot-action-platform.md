@@ -414,31 +414,31 @@
 - Produces: `create_teams_app(fastapi_app: FastAPI, settings: Settings, dispatcher: ActionDispatcher) -> microsoft_teams.apps.App` using `FastAPIAdapter` and `microsoft-teams-apps>=2.0.16,<2.1`.
 - Produces: authenticated `/api/messages`, message/card-submit/install handlers, conversation bindings for personal/group/team/channel scopes, and proactive transport.
 
-- [ ] **Step 1: Add the pinned SDK dependency and write failing adapter tests**
+- [x] **Step 1: Add the pinned SDK dependency and write failing adapter tests**
 
   Assert one initialization per FastAPI lifespan, auth required outside local/test, `/api/messages` registration, slash and mention parsing, no storage of ordinary message text, and activity-to-ActionContext identity mapping.
 
-- [ ] **Step 2: Write failing installation/privacy/card tests**
+- [x] **Step 2: Write failing installation/privacy/card tests**
 
   Cover PM-only group binding, personal chat without one fixed Team, welcome/help cards, group invocation returning only non-sensitive acknowledgement, personal/dialog continuation, submit idempotency, and missing conversation delivery failure.
 
-- [ ] **Step 3: Run RED tests**
+- [x] **Step 3: Run RED tests**
 
   Run: `uv run pytest apps/backend/tests/teams -q`
 
   Expected: FAIL because Teams SDK adapter and bindings are absent.
 
-- [ ] **Step 4: Implement SDK factory, handlers, presenters, bindings, cards, and bot manifest**
+- [x] **Step 4: Implement SDK factory, handlers, presenters, bindings, cards, and bot manifest**
 
   Set bot scopes to `personal`, `groupChat`, and `team`; declare command lists; point bot endpoint documentation to `/api/messages`. Never use `skip_auth=True` in staging/production.
 
-- [ ] **Step 5: Run GREEN and package validation**
+- [x] **Step 5: Run GREEN and package validation**
 
   Run: `uv run pytest apps/backend/tests/teams -q && make teams-package && unzip -l dist/project-assistant-teams.zip`
 
   Expected: tests PASS and ZIP contains only manifest plus required icon assets at its root.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
   `git commit -m "feat: add Microsoft Teams bot adapter"`
 

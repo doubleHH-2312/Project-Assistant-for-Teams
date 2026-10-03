@@ -11,15 +11,27 @@
     },
     {
       "type": "TextBlock",
-      "text": "Record evidence for one work item. Your update remains editable until weekly confirmation.",
-      "wrap": true
+      "text": "The submission time and reporting date are recorded automatically.",
+      "wrap": true,
+      "isSubtle": true
+    },
+    {
+      "type": "Input.ChoiceSet",
+      "id": "projectId",
+      "label": "Project",
+      "isRequired": true,
+      "errorMessage": "Select a project",
+      "choices.data": {
+        "type": "Data.Query",
+        "dataset": "projects"
+      }
     },
     {
       "type": "Input.Text",
       "id": "workItemId",
-      "label": "Work item ID",
+      "label": "Work item",
       "isRequired": true,
-      "errorMessage": "Work item ID is required"
+      "errorMessage": "Work item is required"
     },
     {
       "type": "Input.ChoiceSet",
@@ -61,10 +73,7 @@
       "type": "Action.Execute",
       "title": "Save update",
       "verb": "daily",
-      "data": {
-        "action": "daily",
-        "schemaVersion": 1
-      }
+      "data": { "action": "daily", "schemaVersion": 1 }
     }
   ]
 }

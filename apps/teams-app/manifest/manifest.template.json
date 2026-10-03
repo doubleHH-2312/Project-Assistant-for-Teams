@@ -31,6 +31,33 @@
       "scopes": ["personal"]
     }
   ],
+  "bots": [
+    {
+      "botId": "__TEAMS_APP_ID__",
+      "scopes": ["personal", "groupChat", "team"],
+      "supportsFiles": false,
+      "isNotificationOnly": false,
+      "commandLists": [
+        {
+          "scopes": ["personal", "groupChat", "team"],
+          "commands": [
+            { "title": "help", "description": "Show actions available to your role" },
+            { "title": "daily", "description": "Submit a structured daily update" },
+            { "title": "history", "description": "View your daily report history" },
+            { "title": "daily-summary", "description": "View Team reporting coverage and blockers" },
+            { "title": "weekly", "description": "Generate your weekly report draft" },
+            { "title": "weekly-team", "description": "Generate a Team weekly report draft" }
+          ]
+        },
+        {
+          "scopes": ["personal"],
+          "commands": [
+            { "title": "weekly-multi-team", "description": "Generate a multi-Team weekly report draft" }
+          ]
+        }
+      ]
+    }
+  ],
   "permissions": ["identity"],
   "validDomains": ["__APP_HOSTNAME__"]
 }

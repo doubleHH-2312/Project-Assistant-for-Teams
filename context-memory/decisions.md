@@ -163,3 +163,18 @@ Append new decisions. Do not rewrite existing records; add a superseding record.
   metadata would violate the audit-data minimization rule.
 - Impact: Migration `0005` is assigned to action results. Planned multi-team and Teams
   binding migrations move to `0006` and `0007` without rewriting prior revisions.
+
+## 2026-10-03 — D-019 Teams SDK boundary and conversation privacy
+
+- Decision: Use `microsoft-teams-apps` 2.0.x with one `FastAPIAdapter` endpoint at
+  `/api/messages`. Personal conversations remain Team-unbound; group/channel
+  installations require an explicit PM-authorized binding to one application Team.
+  Ignore ordinary message text before identity or persistence, and expose private
+  action output only as a personal Adaptive Card; shared conversations receive a
+  content-free continuation acknowledgement.
+- Reason: The bot must support personal and shared Teams contexts without passively
+  collecting chat history or leaking report content, while reusing the same Action
+  Dispatcher and Team-scoped authorization rules as the web app.
+- Impact: Migration `0007` persists conversation installations/bindings. SDK
+  unauthenticated mode is limited to local/test; staging/production require bot
+  credentials and tenant configuration. Real tenant delivery remains an explicit gate.

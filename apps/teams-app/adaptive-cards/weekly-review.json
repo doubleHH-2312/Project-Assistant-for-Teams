@@ -1,0 +1,39 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Weekly report draft",
+      "weight": "Bolder",
+      "size": "Medium"
+    },
+    {
+      "type": "TextBlock",
+      "text": "Review the evidence-based draft before confirming it.",
+      "wrap": true
+    },
+    {
+      "type": "Input.Text",
+      "id": "content",
+      "label": "Report",
+      "isMultiline": true,
+      "isRequired": true
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Execute",
+      "title": "Save draft",
+      "verb": "weekly.save",
+      "data": { "action": "weekly", "operation": "save", "schemaVersion": 1 }
+    },
+    {
+      "type": "Action.Execute",
+      "title": "Confirm",
+      "verb": "weekly.confirm",
+      "data": { "action": "weekly", "operation": "confirm", "schemaVersion": 1 }
+    }
+  ]
+}

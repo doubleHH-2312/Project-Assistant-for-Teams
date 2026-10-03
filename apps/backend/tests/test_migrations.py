@@ -31,6 +31,7 @@ def test_initial_migration_builds_expected_schema(tmp_path: Path) -> None:
         "weekly_report_teams",
         "report_evidence_links",
         "report_publications",
+        "teams_conversation_bindings",
     }.issubset(tables)
     daily_columns = {
         column["name"] for column in inspector.get_columns("daily_reports")
@@ -57,6 +58,20 @@ def test_initial_migration_builds_expected_schema(tmp_path: Path) -> None:
     assert template_columns["team_id"]["nullable"] is True
     assert template_columns["tenant_id"]["nullable"] is True
     assert template_columns["scope"]["type"].length >= len("MULTI_TEAM")
+    binding_columns = {
+        column["name"]
+        for column in inspector.get_columns("teams_conversation_bindings")
+    }
+    assert {
+        "tenant_id",
+        "conversation_id",
+        "conversation_type",
+        "service_url",
+        "user_id",
+        "team_id",
+        "installed_by_id",
+        "active",
+    }.issubset(binding_columns)
     engine.dispose()
 
 

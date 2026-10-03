@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from project_assistant.api.system import router as system_router
 from project_assistant.core.config import get_settings
-from project_assistant.core.database import create_schema
+from project_assistant.core.database import SessionFactory, create_schema
 from project_assistant.core.errors import AppError, app_error_handler
 from project_assistant.modules.daily_reports.router import router as daily_report_router
 from project_assistant.modules.teams.router import router as team_router
@@ -16,11 +16,20 @@ from project_assistant.modules.weekly_reports.router import router as weekly_rep
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     if settings.app_env in {"local", "test"}:
         await create_schema()
-    yield
+    teams_app = getattr(app.state, "teams_app", None)
+    if teams_app is not None and not getattr(app.state, "teams_initialized", False):
+        await teams_app.initialize()
+        app.state.teams_initialized = True
+    try:
+        yield
+    finally:
+        if teams_app is not None and getattr(app.state, "teams_initialized", False):
+            await teams_app.stop()
+            app.state.teams_initialized = False
 
 
 def create_app() -> FastAPI:
@@ -47,6 +56,22 @@ def create_app() -> FastAPI:
     app.include_router(daily_report_router, prefix=settings.api_prefix)
     app.include_router(team_router, prefix=settings.api_prefix)
     app.include_router(weekly_report_router, prefix=settings.api_prefix)
+    if settings.teams_transport == "sdk":
+        from project_assistant.integrations.teams.app import create_teams_app
+        from project_assistant.integrations.teams.runtime import (
+            SessionScopedActionDispatcher,
+            SessionScopedInstallationRecorder,
+            SessionScopedTeamsContextResolver,
+        )
+
+        app.state.teams_app = create_teams_app(
+            app,
+            settings,
+            SessionScopedActionDispatcher(SessionFactory, settings),
+            context_resolver=SessionScopedTeamsContextResolver(SessionFactory),
+            installation_recorder=SessionScopedInstallationRecorder(SessionFactory),
+        )
+        app.state.teams_initialized = False
     return app
 
 

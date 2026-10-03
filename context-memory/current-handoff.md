@@ -8,7 +8,7 @@
   deployment is now captured in
   `docs/superpowers/specs/2026-10-02-teams-bot-action-platform-design.md`.
 - The user approved the written spec and 11-task TDD implementation plan at
-  `docs/superpowers/plans/2026-10-02-teams-bot-action-platform.md`. Tasks 1-7 are
+  `docs/superpowers/plans/2026-10-02-teams-bot-action-platform.md`. Tasks 1-8 are
   implemented. Every Daily create/edit starts an invocation
   and appends a server-timestamped Work Item Status Event; the report, event, and
   successful outcome commit atomically. Task 4 adds the typed parser/registry/dispatcher
@@ -26,20 +26,26 @@
   immutable revisions, explicit idempotent publication, and private `/weekly`,
   `/weekly-team`, and `/weekly-multi-team` handlers. The deterministic mock preserves
   evidence IDs and leaves risk/issue/lesson sections empty when evidence is absent.
+- Task 8 adds the Microsoft Teams SDK v2 adapter at `/api/messages`, personal/group/
+  channel activity context mapping, PM-only group-to-Team bindings, install capture,
+  Adaptive Cards, privacy-aware presentation, proactive delivery failure semantics,
+  and a bot-enabled v1.23 manifest. Ordinary chat text is discarded before any
+  identity lookup or persistence; shared conversations never receive private report
+  bodies.
 - D-014 records the GPT-first OpenAI-compatible adapter; switching to the company LLM
   is configuration-only after its endpoint passes the shared contract tests.
 - A runnable local web vertical slice is available at `http://localhost:5173` when the
   Compose stack is running. The current stack was built, started, and seeded.
 - API, PostgreSQL, worker, and web containers are running; API reports healthy.
-- A Teams v1.23 personal-tab package template, icons, adaptive card, and packaging
-  script exist. The generated demo ZIP uses non-production example values and is not
-  for tenant installation.
+- A Teams v1.23 bot + personal-tab package is generated at
+  `dist/project-assistant-teams.zip`. It contains only `manifest.json`, `color.png`,
+  and `outline.png`; example values are non-production and no tenant smoke is claimed.
 - `AGENTS.md` routes the installed `.agents/skills/` plus Superpowers workflows and
   requires context-memory handoff discipline.
 
 ## Verification performed
 
-- Backend: Task 7 fresh run passed 75 tests; Ruff and strict mypy passed. Migration
+- Backend: Task 8 fresh run passed 87 tests; Ruff and strict mypy passed. Migration
   tests cover clean install, legacy Daily `team_id` backfill, audit, and action-result
   storage.
 - Frontend: Vitest, ESLint, TypeScript and Vite production build passed.
@@ -47,16 +53,17 @@
 - Live HTTP: web HTML and proxied liveness returned 200; overview returned seeded data;
   daily `BLOCKED` report returned the expected fallback `effectiveBlocker`; member
   weekly generation and confirmation succeeded using the deterministic mock LLM.
-- Teams package: ZIP layout inspected and manifest instance validated against the
-  official Microsoft v1.23 schema. Python's meta-schema check cannot parse Microsoft's
-  Unicode `\\p{L}` regex, so validation used `Draft7Validator.iter_errors` directly.
+- Teams package: fresh ZIP layout inspection found exactly the manifest and two icons
+  at root. Adapter tests cover endpoint registration, skip-auth rejection, mention/
+  slash parsing, passive-message discard, bindings, privacy, cards and missing
+  proactive-conversation failure.
 
 ## Next action
 
-Continue Task 8 under RED -> GREEN -> REFACTOR: add the Microsoft Teams SDK v2
-adapter, verified personal/group/channel context resolution, conversation bindings,
-privacy-aware presenters, Adaptive Cards, `/api/messages`, and the installable bot
-manifest package.
+Continue Task 9 under RED -> GREEN -> REFACTOR: expose the remaining thin Team/action
+API contracts, export OpenAPI, generate the TypeScript client, and build the role-aware
+web routes for Daily, History, Daily Summary, weekly review, Team settings, and
+integration status.
 
 ## External blockers
 

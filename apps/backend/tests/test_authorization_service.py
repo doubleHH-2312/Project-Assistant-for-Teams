@@ -62,6 +62,11 @@ async def test_roles_inherit_only_their_team_permissions() -> None:
         "user-1", ["team-a"], permission.GENERATE_TEAM_WEEKLY
     )
     await pm_service.require("user-1", ["team-a"], permission.GENERATE_TEAM_WEEKLY)
+    await pm_service.require("user-1", ["team-a"], permission.MANAGE_TEAMS_BINDING)
+    with pytest.raises(AppError):
+        await lead_service.require(
+            "user-1", ["team-a"], permission.MANAGE_TEAMS_BINDING
+        )
 
     assert member_denied.value.status_code == 403
     assert member_denied.value.code == "FORBIDDEN"
@@ -127,4 +132,3 @@ async def test_multi_team_requires_same_eligible_role_in_every_team() -> None:
 
     assert mixed_denied.value.status_code == 403
     assert mixed_denied.value.code == "FORBIDDEN"
-

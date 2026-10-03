@@ -4,7 +4,11 @@ from project_assistant.modules.actions.results import ActionResultRecord
 from project_assistant.modules.audit.models import ActionInvocation, WorkItemStatusEvent
 from project_assistant.modules.daily_reports.models import DailyReport
 from project_assistant.modules.memberships.models import TeamMembership
-from project_assistant.modules.notifications.models import NotificationLog, TeamsConversation
+from project_assistant.modules.notifications.models import (
+    NotificationLog,
+    TeamsConversation,
+    TeamsConversationBinding,
+)
 from project_assistant.modules.projects.models import Project
 from project_assistant.modules.publications.models import ReportPublication
 from project_assistant.modules.teams.models import Team
@@ -29,6 +33,7 @@ __all__ = [
     "ReportPublication",
     "Team",
     "TeamsConversation",
+    "TeamsConversationBinding",
     "User",
     "WeeklyReport",
     "WeeklyReportTeam",

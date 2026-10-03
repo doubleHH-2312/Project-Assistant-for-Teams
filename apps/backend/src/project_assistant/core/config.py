@@ -33,7 +33,8 @@ class Settings(BaseSettings):
     llm_max_attempts: int = 2
     teams_transport: Literal["mock", "sdk"] = "mock"
     teams_app_id: str | None = None
-    teams_app_password: str | None = Field(default=None, repr=False)
+    teams_app_password: SecretStr | None = Field(default=None, repr=False)
+    teams_skip_auth: bool = False
     cors_origins: str = "http://localhost:5173,http://localhost:8080"
 
     @property
@@ -56,6 +57,16 @@ class Settings(BaseSettings):
             raise ValueError("OpenAI-compatible LLM mode requires base URL, API key and model")
         if self.llm_timeout_seconds <= 0 or self.llm_max_attempts < 1:
             raise ValueError("LLM timeout and max attempts must be positive")
+        if self.teams_skip_auth and self.app_env not in {"local", "test"}:
+            raise ValueError(
+                "Teams unauthenticated mode is forbidden outside local/test"
+            )
+        if self.teams_transport == "sdk" and not self.teams_skip_auth and not all(
+            [self.teams_app_id, self.teams_app_password, self.entra_tenant_id]
+        ):
+            raise ValueError(
+                "Authenticated Teams SDK mode requires app ID, app password, and tenant ID"
+            )
         return self
 
 

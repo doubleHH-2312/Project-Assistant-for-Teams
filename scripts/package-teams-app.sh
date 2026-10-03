@@ -17,7 +17,7 @@ esac
 
 repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 source_dir="$repo_root/apps/teams-app"
-output_dir="$source_dir/build"
+output_dir="$repo_root/dist"
 stage_dir=$(mktemp -d)
 trap 'rm -rf "$stage_dir"' EXIT
 
