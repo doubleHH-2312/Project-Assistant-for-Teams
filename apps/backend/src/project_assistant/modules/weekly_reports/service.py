@@ -5,7 +5,7 @@ from typing import Any, Protocol
 from jsonschema import ValidationError, validate
 
 from project_assistant.core.errors import AppError
-from project_assistant.integrations.llm.provider import LLMProvider
+from project_assistant.integrations.llm.provider import LLMProvider, LLMProviderError
 from project_assistant.modules.daily_reports.models import DailyReport
 from project_assistant.modules.memberships.service import AuthorizationService, Permission
 from project_assistant.modules.templates.models import ReportTemplate
@@ -115,7 +115,15 @@ class WeeklyReportService:
             confirmed_ids = {report.subject_user_id for report in member_reports}
             expected_ids = await self.repository.list_expected_member_ids(request.team_id)
             missing = sorted(user_id for user_id in expected_ids if user_id not in confirmed_ids)
-        result = await self.provider.generate(template.schema_json, evidence)
+        try:
+            result = await self.provider.generate(template.schema_json, evidence)
+        except LLMProviderError as error:
+            status_code = 503 if error.code == "LLM_UNAVAILABLE" else 502
+            raise AppError(
+                status_code,
+                error.code,
+                "Report generation is temporarily unavailable",
+            ) from error
         try:
             validate(instance=result.content, schema=template.schema_json)
         except ValidationError as error:

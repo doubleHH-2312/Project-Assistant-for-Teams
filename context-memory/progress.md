@@ -14,7 +14,8 @@ Statuses: `READY`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 | WKL-001 Member weekly workflow | DONE | Codex | Service/API tests; live generate and confirm smoke with mock LLM | Add browser E2E |
 | WKL-002 Team weekly workflow/revisions | DONE | Codex | Confirmed-only aggregation and immutability/revision tests | Add browser E2E |
 | INT-001 Teams adapter/manifest | BLOCKED | Codex | v1.23 tab manifest instance validates; ZIP has three root files | Need public HTTPS host, app registration and tenant sideload |
-| INT-002 Internal LLM adapter | BLOCKED | Codex | Deterministic mock and schema rejection tests pass | Need endpoint/auth/model/data-policy contract |
+| INT-002 OpenAI-compatible LLM adapter | DONE | Codex | Task 5: GPT/custom `/chat/completions` contract, 3 structured-output modes, bounded timeout/429/5xx retry, secret-safe config, malformed output and local schema rejection; fresh 54 backend tests pass | Real GPT/company smoke remains gated on credentials/data policy |
+| GATE-LLM Real LLM endpoint smoke | BLOCKED | External | No API key/model approval stored; company capability contract incomplete | Supply approved GPT or company endpoint configuration |
 | OPS-001 Containers/CI/IaC/runbooks | IN_PROGRESS | Codex | API/worker/web images build; Compose health and proxy smoke pass | Add GitHub Actions and Terraform baseline |
 | QA-001 Full review and verification | IN_PROGRESS | Codex | Fresh: 19 backend + 1 web test pass; lint/type/build/Compose/manifest/live health pass | Add Playwright, accessibility and security review |
 | ARC-002 Teams bot/action platform design | DONE | Codex | User approved written spec; added OpenAI-compatible GPT-first/company-LLM adapter decision D-014 | Write implementation plan |

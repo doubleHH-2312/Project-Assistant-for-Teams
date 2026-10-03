@@ -2,7 +2,7 @@
 
 ## State
 
-- Date: 2026-10-02 (Asia/Ho_Chi_Minh).
+- Date: 2026-10-03 (Asia/Ho_Chi_Minh).
 - The approved conversational design for the extensible Teams bot, team-scoped RBAC,
   append-only audit/status history, multi-team reporting, and Vercel/Supabase demo
   deployment is now captured in
@@ -13,6 +13,9 @@
   and appends a server-timestamped Work Item Status Event; the report, event, and
   successful outcome commit atomically. Task 4 adds the typed parser/registry/dispatcher
   and persists private Action Results separately for cold-start-safe idempotent replay.
+- Task 5 replaces the former internal-only branch with one OpenAI-compatible provider
+  for GPT and the future company endpoint. Provider switching is configuration-only;
+  no real credential is stored or used in tests.
 - D-014 records the GPT-first OpenAI-compatible adapter; switching to the company LLM
   is configuration-only after its endpoint passes the shared contract tests.
 - A runnable local web vertical slice is available at `http://localhost:5173` when the
@@ -26,7 +29,7 @@
 
 ## Verification performed
 
-- Backend: Task 4 fresh run passed 40 tests; Ruff and strict mypy passed. Migration
+- Backend: Task 5 fresh run passed 54 tests; Ruff and strict mypy passed. Migration
   tests cover clean install, legacy Daily `team_id` backfill, audit, and action-result
   storage.
 - Frontend: Vitest, ESLint, TypeScript and Vite production build passed.
@@ -40,9 +43,9 @@
 
 ## Next action
 
-Continue Task 5 under RED -> GREEN -> REFACTOR: replace the old internal-only LLM
-branch with one GPT-first OpenAI-compatible provider/factory, bounded resilience, and
-local JSON Schema validation for both GPT and the future company endpoint.
+Continue Task 6 under RED -> GREEN -> REFACTOR: register concrete `/daily`, `/history`,
+`/daily-summary`, and `/help` handlers; derive report date from Team timezone, enforce
+the backfill window, and expose blocker event dates from the append-only timeline.
 
 ## External blockers
 

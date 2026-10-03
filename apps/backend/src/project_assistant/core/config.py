@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,10 +22,15 @@ class Settings(BaseSettings):
     entra_tenant_id: str | None = None
     entra_client_id: str | None = None
     entra_jwks_url: str | None = None
-    llm_provider: Literal["mock", "internal"] = "mock"
-    internal_llm_base_url: str | None = None
-    internal_llm_api_key: str | None = Field(default=None, repr=False)
-    internal_llm_model: str | None = None
+    llm_provider: Literal["mock", "openai_compatible"] = "mock"
+    llm_base_url: str = "https://api.openai.com/v1"
+    llm_api_key: SecretStr | None = Field(default=None, repr=False)
+    llm_model: str | None = None
+    llm_structured_output_mode: Literal["json_schema", "json_object", "prompt"] = (
+        "json_schema"
+    )
+    llm_timeout_seconds: float = 20
+    llm_max_attempts: int = 2
     teams_transport: Literal["mock", "sdk"] = "mock"
     teams_app_id: str | None = None
     teams_app_password: str | None = Field(default=None, repr=False)
@@ -45,10 +50,12 @@ class Settings(BaseSettings):
             [self.entra_tenant_id, self.entra_client_id, self.entra_jwks_url]
         ):
             raise ValueError("Entra authentication requires tenant, client, and JWKS settings")
-        if self.llm_provider == "internal" and not all(
-            [self.internal_llm_base_url, self.internal_llm_api_key, self.internal_llm_model]
+        if self.llm_provider == "openai_compatible" and not all(
+            [self.llm_base_url, self.llm_api_key, self.llm_model]
         ):
-            raise ValueError("Internal LLM mode requires endpoint, API key, and model")
+            raise ValueError("OpenAI-compatible LLM mode requires base URL, API key and model")
+        if self.llm_timeout_seconds <= 0 or self.llm_max_attempts < 1:
+            raise ValueError("LLM timeout and max attempts must be positive")
         return self
 
 

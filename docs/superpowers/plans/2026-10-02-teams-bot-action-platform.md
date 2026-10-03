@@ -264,31 +264,31 @@
 - Produces: `OpenAICompatibleLLMProvider(base_url, api_key, model, output_mode, timeout_seconds, max_attempts)` using `POST {base_url}/chat/completions`.
 - Produces: `build_llm_provider(settings) -> LLMProvider` for `mock` and `openai_compatible` only.
 
-- [ ] **Step 1: Write failing request/response contract tests with `httpx.MockTransport`**
+- [x] **Step 1: Write failing request/response contract tests with `httpx.MockTransport`**
 
   Assert GPT/custom base URLs, bearer auth, model, system/evidence messages, each structured-output mode, parsed `choices[0].message.content`, provider metadata without API key, and no evidence omitted.
 
-- [ ] **Step 2: Write failing resilience tests**
+- [x] **Step 2: Write failing resilience tests**
 
   Assert bounded retry for timeout/transport/429/5xx, no retry for other 4xx, malformed JSON rejection, and local JSON Schema rejection before report persistence.
 
-- [ ] **Step 3: Run RED tests**
+- [x] **Step 3: Run RED tests**
 
   Run: `uv run pytest apps/backend/tests/test_openai_compatible_provider.py apps/backend/tests/test_weekly_report_service.py -q`
 
   Expected: FAIL on missing adapter/configuration.
 
-- [ ] **Step 4: Implement adapter and provider factory**
+- [x] **Step 4: Implement adapter and provider factory**
 
   Use `LLM_BASE_URL=https://api.openai.com/v1`, `LLM_MODEL`, secret `LLM_API_KEY`, `LLM_STRUCTURED_OUTPUT_MODE`, `LLM_TIMEOUT_SECONDS`, and `LLM_MAX_ATTEMPTS`. Keep schema validation in the weekly application service for all modes.
 
-- [ ] **Step 5: Run GREEN and configuration security tests**
+- [x] **Step 5: Run GREEN and configuration security tests**
 
   Run: `uv run pytest apps/backend/tests/test_openai_compatible_provider.py apps/backend/tests/test_weekly_report_service.py apps/backend/tests/test_system.py -q`
 
   Expected: PASS with no real network or secret.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
   `git commit -m "feat: add OpenAI-compatible report generation"`
 

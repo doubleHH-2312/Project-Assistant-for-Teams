@@ -6,11 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from project_assistant.core.auth import get_authorization_service, get_current_user
 from project_assistant.core.config import get_settings
 from project_assistant.core.database import get_session
-from project_assistant.integrations.llm.provider import (
-    InternalLLMProvider,
-    LLMProvider,
-    MockLLMProvider,
-)
+from project_assistant.integrations.llm.factory import build_llm_provider
 from project_assistant.modules.memberships.service import AuthorizationService, Permission
 from project_assistant.modules.templates.models import ReportTemplate
 from project_assistant.modules.users.models import User
@@ -32,18 +28,7 @@ async def get_weekly_report_service(
 ) -> WeeklyReportService:
     settings = get_settings()
     repository = SqlAlchemyWeeklyReportRepository(session)
-    provider: LLMProvider
-    if settings.llm_provider == "internal":
-        assert settings.internal_llm_base_url
-        assert settings.internal_llm_api_key
-        assert settings.internal_llm_model
-        provider = InternalLLMProvider(
-            settings.internal_llm_base_url,
-            settings.internal_llm_api_key,
-            settings.internal_llm_model,
-        )
-    else:
-        provider = MockLLMProvider()
+    provider = build_llm_provider(settings)
     return WeeklyReportService(repository, provider, authorization)
 
 

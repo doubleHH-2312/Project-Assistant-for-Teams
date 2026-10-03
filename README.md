@@ -2,7 +2,8 @@
 
 Microsoft Teams-centered daily reporting, operational monitoring, and human-reviewed
 weekly reporting. The MVP is a Python/FastAPI modular monolith with a React web app,
-PostgreSQL, a separate worker process, and adapters for Teams and an internal LLM.
+PostgreSQL, a separate worker process, and adapters for Teams plus GPT/company
+OpenAI-compatible LLM endpoints.
 
 ## Start here
 

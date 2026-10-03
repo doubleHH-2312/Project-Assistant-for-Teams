@@ -3,7 +3,11 @@ from datetime import date
 import pytest
 
 from project_assistant.core.errors import AppError
-from project_assistant.integrations.llm.provider import LLMResult, MockLLMProvider
+from project_assistant.integrations.llm.provider import (
+    LLMProviderError,
+    LLMResult,
+    MockLLMProvider,
+)
 from project_assistant.modules.daily_reports.models import DailyReport, WorkStatus
 from project_assistant.modules.templates.models import ReportTemplate
 from project_assistant.modules.users.models import User
@@ -230,6 +234,12 @@ class InvalidProvider:
         return LLMResult(content={"invented": ["not allowed"]}, provider="invalid", metadata={})
 
 
+class UnavailableProvider:
+    async def generate(self, template: dict, evidence: list[dict]) -> LLMResult:
+        del template, evidence
+        raise LLMProviderError("LLM_UNAVAILABLE", "sensitive upstream detail")
+
+
 @pytest.mark.asyncio
 async def test_invalid_llm_output_is_rejected_without_persistence() -> None:
     repository = FakeWeeklyRepository()
@@ -248,6 +258,29 @@ async def test_invalid_llm_output_is_rejected_without_persistence() -> None:
         )
 
     assert invalid.value.code == "LLM_OUTPUT_INVALID"
+    assert repository.saved == []
+
+
+@pytest.mark.asyncio
+async def test_provider_failure_is_sanitized_without_persistence() -> None:
+    repository = FakeWeeklyRepository()
+    service = WeeklyReportService(
+        repository, UnavailableProvider(), AllowAuthorization()  # type: ignore[arg-type]
+    )
+
+    with pytest.raises(AppError) as unavailable:
+        await service.generate(
+            user(),
+            WeeklyGenerateRequest(
+                teamId="team-1",
+                scope=ReportScope.MEMBER,
+                weekStart=date(2026, 9, 28),
+            ),
+        )
+
+    assert unavailable.value.status_code == 503
+    assert unavailable.value.code == "LLM_UNAVAILABLE"
+    assert "sensitive" not in unavailable.value.message
     assert repository.saved == []
 
 
