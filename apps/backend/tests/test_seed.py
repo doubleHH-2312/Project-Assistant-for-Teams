@@ -12,8 +12,15 @@ from project_assistant.modules.audit.models import (
 from project_assistant.modules.daily_reports.models import DailyReport, WorkStatus
 from project_assistant.modules.projects.models import Project
 from project_assistant.modules.teams.models import Team
+from project_assistant.modules.templates.models import ReportTemplate
 from project_assistant.modules.users.models import User
-from project_assistant.modules.weekly_reports.models import WeeklyReport, WeeklyReportStatus
+from project_assistant.modules.weekly_reports.models import (
+    ReportEvidenceLink,
+    ReportScope,
+    WeeklyReport,
+    WeeklyReportStatus,
+    WeeklyReportTeam,
+)
 from project_assistant.modules.work_items.models import WorkItem
 from project_assistant.seed import seed_database
 
@@ -77,6 +84,26 @@ def test_seed_is_idempotent_and_contains_demo_scenarios() -> None:
                 .where(WeeklyReport.status == WeeklyReportStatus.CONFIRMED)
             )
             >= 1
+        )
+        assert (
+            session.scalar(
+                select(func.count())
+                .select_from(ReportTemplate)
+                .where(
+                    ReportTemplate.scope == ReportScope.MULTI_TEAM,
+                    ReportTemplate.tenant_id == "tenant-demo",
+                    ReportTemplate.team_id.is_(None),
+                )
+            )
+            == 1
+        )
+        assert (
+            session.scalar(select(func.count()).select_from(WeeklyReportTeam))
+            >= 2
+        )
+        assert (
+            session.scalar(select(func.count()).select_from(ReportEvidenceLink))
+            >= 2
         )
         membership_rows = session.execute(
             select(

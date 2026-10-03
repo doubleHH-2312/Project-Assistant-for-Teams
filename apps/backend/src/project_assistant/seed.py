@@ -21,7 +21,12 @@ from project_assistant.modules.model_registry import (  # noqa: F401
     WeeklyReport,
     WorkItem,
 )
-from project_assistant.modules.weekly_reports.models import ReportScope, WeeklyReportStatus
+from project_assistant.modules.weekly_reports.models import (
+    ReportEvidenceLink,
+    ReportScope,
+    WeeklyReportStatus,
+    WeeklyReportTeam,
+)
 
 
 def _previous_business_days(reference_date: date, count: int) -> list[date]:
@@ -235,12 +240,72 @@ def seed_database(session: Session, reference_date: date | None = None) -> None:
             ),
         ]
     )
+    evidence_item_schema = {
+        "type": "object",
+        "required": ["text", "evidenceIds"],
+        "properties": {
+            "text": {"type": "string"},
+            "evidenceIds": {
+                "type": "array",
+                "items": {"type": "string"},
+                "minItems": 1,
+            },
+        },
+        "additionalProperties": False,
+    }
+    project_schema = {
+        "type": "object",
+        "required": [
+            "projectId",
+            "completedTasks",
+            "inProgressTasks",
+            "blockers",
+            "risks",
+            "issues",
+            "lessonsLearned",
+            "nextActions",
+        ],
+        "properties": {
+            "projectId": {"type": "string"},
+            **{
+                key: {"type": "array", "items": evidence_item_schema}
+                for key in [
+                    "completedTasks",
+                    "inProgressTasks",
+                    "blockers",
+                    "risks",
+                    "issues",
+                    "lessonsLearned",
+                    "nextActions",
+                ]
+            },
+        },
+        "additionalProperties": False,
+    }
     template_schema = {
         "type": "object",
-        "required": ["completed", "in_progress", "blockers", "next_week", "support_required"],
+        "required": ["projects"],
         "properties": {
-            key: {"type": "array", "items": {"type": "string"}}
-            for key in ["completed", "in_progress", "blockers", "next_week", "support_required"]
+            "projects": {"type": "array", "items": project_schema},
+        },
+        "additionalProperties": False,
+    }
+    multi_template_schema = {
+        "type": "object",
+        "required": ["teams"],
+        "properties": {
+            "teams": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "required": ["teamId", "projects"],
+                    "properties": {
+                        "teamId": {"type": "string"},
+                        "projects": {"type": "array", "items": project_schema},
+                    },
+                    "additionalProperties": False,
+                },
+            }
         },
         "additionalProperties": False,
     }
@@ -280,6 +345,16 @@ def seed_database(session: Session, reference_date: date | None = None) -> None:
         schema_json=template_schema,
         active=True,
     )
+    multi_team_template = ReportTemplate(
+        id="template-multi-team-v1",
+        team_id=None,
+        tenant_id=tenant_id,
+        name="default-multi-team",
+        scope=ReportScope.MULTI_TEAM,
+        version=1,
+        schema_json=multi_template_schema,
+        active=True,
+    )
     # Models deliberately avoid ORM relationships, so establish FK layers explicitly.
     session.add_all([team, platform_team])
     session.flush()
@@ -296,6 +371,7 @@ def seed_database(session: Session, reference_date: date | None = None) -> None:
             team_template,
             platform_member_template,
             platform_team_template,
+            multi_team_template,
         ]
     )
     session.flush()
@@ -430,7 +506,25 @@ def seed_database(session: Session, reference_date: date | None = None) -> None:
             team_id=team.id,
             week_start=week_start,
             week_end=week_start + timedelta(days=4),
-            content_json={"completed": ["OPS-001"], "in_progress": [], "blockers": []},
+            content_json={
+                "projects": [
+                    {
+                        "projectId": project.id,
+                        "completedTasks": [
+                            {
+                                "text": "OPS-001: Progressed OPS-001",
+                                "evidenceIds": ["daily-0-0"],
+                            }
+                        ],
+                        "inProgressTasks": [],
+                        "blockers": [],
+                        "risks": [],
+                        "issues": [],
+                        "lessonsLearned": [],
+                        "nextActions": [],
+                    }
+                ]
+            },
             missing_contributors=[],
             input_record_ids=[report.id for report in reports if report.user_id == members[0].id],
             generation_source="MOCK_LLM",
@@ -448,7 +542,25 @@ def seed_database(session: Session, reference_date: date | None = None) -> None:
             team_id=team.id,
             week_start=week_start,
             week_end=week_start + timedelta(days=4),
-            content_json={"completed": [], "in_progress": ["OPS-002"], "blockers": []},
+            content_json={
+                "projects": [
+                    {
+                        "projectId": project.id,
+                        "completedTasks": [],
+                        "inProgressTasks": [
+                            {
+                                "text": "OPS-002: Progressed OPS-002",
+                                "evidenceIds": ["daily-0-1"],
+                            }
+                        ],
+                        "blockers": [],
+                        "risks": [],
+                        "issues": [],
+                        "lessonsLearned": [],
+                        "nextActions": [],
+                    }
+                ]
+            },
             missing_contributors=[],
             input_record_ids=[report.id for report in reports if report.user_id == members[1].id],
             generation_source="MOCK_LLM",
@@ -460,6 +572,36 @@ def seed_database(session: Session, reference_date: date | None = None) -> None:
         ),
     ]
     session.add_all(weekly_reports)
+    session.flush()
+    reports_by_id = {report.id: report for report in reports}
+    weekly_scope_rows: list[WeeklyReportTeam] = []
+    weekly_evidence_rows: list[ReportEvidenceLink] = []
+    for weekly_index, weekly_report in enumerate(weekly_reports):
+        assert weekly_report.team_id is not None
+        weekly_scope_rows.append(
+            WeeklyReportTeam(
+                id=f"seed-weekly-team-{weekly_index}",
+                weekly_report_id=weekly_report.id,
+                team_id=weekly_report.team_id,
+            )
+        )
+        for evidence_index, source_id in enumerate(weekly_report.input_record_ids):
+            source_report = reports_by_id[source_id]
+            weekly_evidence_rows.append(
+                ReportEvidenceLink(
+                    id=f"seed-weekly-link-{weekly_index}-{evidence_index}",
+                    weekly_report_id=weekly_report.id,
+                    source_type="DAILY_REPORT",
+                    source_id=source_id,
+                    team_id=source_report.team_id,
+                    project_id=source_report.project_id,
+                    recorded_at=source_report.submitted_at
+                    or datetime.combine(
+                        source_report.report_date, time.min, tzinfo=UTC
+                    ),
+                )
+            )
+    session.add_all([*weekly_scope_rows, *weekly_evidence_rows])
     session.commit()
 
 

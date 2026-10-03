@@ -362,31 +362,31 @@
 - Produces registered `/weekly`, `/weekly-team`, `/weekly-multi-team` handlers.
 - Produces `PublicationService.publish(actor, report_id, conversation_id, idempotency_key)` separate from confirmation.
 
-- [ ] **Step 1: Write failing evidence and migration tests**
+- [x] **Step 1: Write failing evidence and migration tests**
 
   Assert Member output groups Tasks by Project, Team output consumes only confirmed Member reports, Multi-team output groups Team then Project and consumes only confirmed Team reports, and every item retains evidence links.
 
-- [ ] **Step 2: Write failing authorization/state/publication tests**
+- [x] **Step 2: Write failing authorization/state/publication tests**
 
   Cover all-Team Tech Lead/PM authorization, missing contributors, Monday validation per Team timezone, immutable confirmation, revision linkage, private draft behavior, explicit publish, and duplicate publish suppression.
 
-- [ ] **Step 3: Run RED tests**
+- [x] **Step 3: Run RED tests**
 
   Run: `uv run pytest apps/backend/tests/test_weekly_evidence.py apps/backend/tests/test_multiteam_weekly_service.py apps/backend/tests/test_publication_service.py apps/backend/tests/test_weekly_report_service.py -q`
 
   Expected: FAIL because structured grouping, multi-team scope, and publication do not exist.
 
-- [ ] **Step 4: Implement schema, evidence builder, use cases, handlers, and seed templates**
+- [x] **Step 4: Implement schema, evidence builder, use cases, handlers, and seed templates**
 
   For `MULTI_TEAM`, resolve the tenant-scoped active template; record selected Teams through `weekly_report_teams`; never fall back to unscoped queries. Optional risks/issues/lessons fields remain empty unless supplied by evidence or human edit.
 
-- [ ] **Step 5: Run GREEN plus migration and malformed-LLM tests**
+- [x] **Step 5: Run GREEN plus migration and malformed-LLM tests**
 
   Run: `uv run pytest apps/backend/tests/test_weekly_evidence.py apps/backend/tests/test_multiteam_weekly_service.py apps/backend/tests/test_publication_service.py apps/backend/tests/test_weekly_report_service.py apps/backend/tests/test_migrations.py -q`
 
   Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
   `git commit -m "feat: add project-grouped multi-team reporting"`
 

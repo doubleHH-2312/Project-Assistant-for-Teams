@@ -13,6 +13,7 @@ Statuses: `READY`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 | MON-002 Reminder worker | DONE | Codex | Schedule/service tests; worker container stays running | Real delivery belongs to INT-001 |
 | WKL-001 Member weekly workflow | DONE | Codex | Service/API tests; live generate and confirm smoke with mock LLM | Add browser E2E |
 | WKL-002 Team weekly workflow/revisions | DONE | Codex | Confirmed-only aggregation and immutability/revision tests | Add browser E2E |
+| WKL-003 Project-grouped multi-team weekly | DONE | Codex | Task 7: Project-grouped Member/Team output, Team-grouped multi-Team output, normalized evidence links, tenant/all-Team RBAC, immutable revision path, explicit idempotent publication, and three private weekly actions; fresh 75 backend tests + Ruff + strict mypy pass | Wire weekly actions into Teams adapter and web/API surfaces |
 | INT-001 Teams adapter/manifest | BLOCKED | Codex | v1.23 tab manifest instance validates; ZIP has three root files | Need public HTTPS host, app registration and tenant sideload |
 | INT-002 OpenAI-compatible LLM adapter | DONE | Codex | Task 5: GPT/custom `/chat/completions` contract, 3 structured-output modes, bounded timeout/429/5xx retry, secret-safe config, malformed output and local schema rejection; fresh 54 backend tests pass | Real GPT/company smoke remains gated on credentials/data policy |
 | GATE-LLM Real LLM endpoint smoke | BLOCKED | External | No API key/model approval stored; company capability contract incomplete | Supply approved GPT or company endpoint configuration |

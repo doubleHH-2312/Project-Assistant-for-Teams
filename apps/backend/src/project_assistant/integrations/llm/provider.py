@@ -32,6 +32,21 @@ class MockLLMProvider:
     async def generate(
         self, template: dict[str, Any], evidence: list[dict[str, Any]]
     ) -> LLMResult:
+        properties = template.get("properties", {})
+        if isinstance(properties, dict) and "teams" in properties:
+            content: dict[str, Any] = {"teams": self._team_sections(evidence)}
+        elif isinstance(properties, dict) and "projects" in properties:
+            content = {"projects": self._project_sections(evidence)}
+        else:
+            content = self._legacy_content(evidence)
+        return LLMResult(
+            content=content,
+            provider="mock",
+            metadata={"mode": "mock", "evidenceCount": len(evidence)},
+        )
+
+    @staticmethod
+    def _legacy_content(evidence: list[dict[str, Any]]) -> dict[str, Any]:
         content: dict[str, list[str]] = {
             "completed": [],
             "in_progress": [],
@@ -40,34 +55,154 @@ class MockLLMProvider:
             "support_required": [],
         }
         for item in evidence:
+            if isinstance(item.get("tasks"), list):
+                for task in item["tasks"]:
+                    if isinstance(task, dict):
+                        MockLLMProvider._append_legacy_task(content, task)
+                continue
             if "content" in item:
                 source = item["content"]
                 for key in content:
                     values = source.get(key, []) if isinstance(source, dict) else []
                     content[key].extend(str(value) for value in values)
                 continue
-            work_item = str(item.get("workItemId", "unknown"))
-            summary = str(item.get("workSummary", ""))
-            entry = f"{work_item}: {summary}"
-            status = item.get("status")
-            if status == "DONE":
-                content["completed"].append(entry)
-            elif status == "BLOCKED":
-                blocker = str(item.get("effectiveBlocker") or summary)
-                content["blockers"].append(f"{work_item}: {blocker}")
-                content["support_required"].append(f"{work_item}: {blocker}")
-            else:
-                content["in_progress"].append(entry)
-            next_action = item.get("nextAction")
-            if next_action:
-                content["next_week"].append(f"{work_item}: {next_action}")
+            MockLLMProvider._append_legacy_task(content, item)
         for key, values in content.items():
             content[key] = list(dict.fromkeys(values))
-        return LLMResult(
-            content=content,
-            provider="mock",
-            metadata={"mode": "mock", "evidenceCount": len(evidence)},
+        return content
+
+    @staticmethod
+    def _append_legacy_task(
+        content: dict[str, list[str]], task: dict[str, Any]
+    ) -> None:
+        work_item = str(task.get("workItemId", "unknown"))
+        summary = str(task.get("workSummary", ""))
+        entry = f"{work_item}: {summary}"
+        status = task.get("status")
+        if status == "DONE":
+            content["completed"].append(entry)
+        elif status == "BLOCKED":
+            blocker = str(task.get("effectiveBlocker") or summary)
+            content["blockers"].append(f"{work_item}: {blocker}")
+            content["support_required"].append(f"{work_item}: {blocker}")
+        else:
+            content["in_progress"].append(entry)
+        next_action = task.get("nextAction")
+        if next_action:
+            content["next_week"].append(f"{work_item}: {next_action}")
+
+    @staticmethod
+    def _project_sections(evidence: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        projects: dict[str, dict[str, Any]] = {}
+        for source in evidence:
+            tasks = source.get("tasks")
+            if isinstance(tasks, list):
+                project_id = str(source.get("projectId", "unknown"))
+                project = projects.setdefault(
+                    project_id, MockLLMProvider._empty_project(project_id)
+                )
+                for task in tasks:
+                    if isinstance(task, dict):
+                        MockLLMProvider._append_project_task(project, task)
+                continue
+            source_projects = source.get("projects")
+            if not isinstance(source_projects, list):
+                continue
+            source_id = source.get("memberReportId") or source.get("teamReportId")
+            if not isinstance(source_id, str):
+                continue
+            for source_project in source_projects:
+                if not isinstance(source_project, dict):
+                    continue
+                project_id = str(source_project.get("projectId", "unknown"))
+                project = projects.setdefault(
+                    project_id, MockLLMProvider._empty_project(project_id)
+                )
+                for section in MockLLMProvider._section_names():
+                    items = source_project.get(section, [])
+                    if not isinstance(items, list):
+                        continue
+                    for item in items:
+                        text = (
+                            str(item.get("text", ""))
+                            if isinstance(item, dict)
+                            else str(item)
+                        )
+                        project[section].append(
+                            {"text": text, "evidenceIds": [source_id]}
+                        )
+        return [projects[key] for key in sorted(projects)]
+
+    @staticmethod
+    def _team_sections(evidence: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        teams: list[dict[str, Any]] = []
+        for source in sorted(evidence, key=lambda item: str(item.get("teamId", ""))):
+            team_id = source.get("teamId")
+            source_id = source.get("teamReportId")
+            projects = source.get("projects")
+            if not isinstance(team_id, str) or not isinstance(source_id, str):
+                continue
+            nested_source = {
+                "teamReportId": source_id,
+                "projects": projects if isinstance(projects, list) else [],
+            }
+            teams.append(
+                {
+                    "teamId": team_id,
+                    "projects": MockLLMProvider._project_sections([nested_source]),
+                }
+            )
+        return teams
+
+    @staticmethod
+    def _empty_project(project_id: str) -> dict[str, Any]:
+        return {
+            "projectId": project_id,
+            **{section: [] for section in MockLLMProvider._section_names()},
+        }
+
+    @staticmethod
+    def _section_names() -> tuple[str, ...]:
+        return (
+            "completedTasks",
+            "inProgressTasks",
+            "blockers",
+            "risks",
+            "issues",
+            "lessonsLearned",
+            "nextActions",
         )
+
+    @staticmethod
+    def _append_project_task(
+        project: dict[str, Any], task: dict[str, Any]
+    ) -> None:
+        work_item = str(task.get("workItemId", "unknown"))
+        summary = str(task.get("workSummary", ""))
+        evidence_ids = [
+            str(source_id)
+            for source_id in task.get("evidenceIds", [])
+            if isinstance(source_id, str)
+        ]
+        item = {"text": f"{work_item}: {summary}", "evidenceIds": evidence_ids}
+        status = task.get("status")
+        if status == "DONE":
+            project["completedTasks"].append(item)
+        elif status == "BLOCKED":
+            blocker = str(task.get("effectiveBlocker") or summary)
+            project["blockers"].append(
+                {"text": f"{work_item}: {blocker}", "evidenceIds": evidence_ids}
+            )
+        else:
+            project["inProgressTasks"].append(item)
+        next_action = task.get("nextAction")
+        if next_action:
+            project["nextActions"].append(
+                {
+                    "text": f"{work_item}: {next_action}",
+                    "evidenceIds": evidence_ids,
+                }
+            )
 
 
 class OpenAICompatibleLLMProvider:

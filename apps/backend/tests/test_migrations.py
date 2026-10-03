@@ -28,6 +28,9 @@ def test_initial_migration_builds_expected_schema(tmp_path: Path) -> None:
         "action_invocations",
         "action_results",
         "work_item_status_events",
+        "weekly_report_teams",
+        "report_evidence_links",
+        "report_publications",
     }.issubset(tables)
     daily_columns = {
         column["name"] for column in inspector.get_columns("daily_reports")
@@ -35,6 +38,25 @@ def test_initial_migration_builds_expected_schema(tmp_path: Path) -> None:
     assert {"team_id", "source", "submitted_at", "last_edited_at"}.issubset(
         daily_columns
     )
+    weekly_team_id = next(
+        column
+        for column in inspector.get_columns("weekly_reports")
+        if column["name"] == "team_id"
+    )
+    template_columns = {
+        column["name"]: column
+        for column in inspector.get_columns("report_templates")
+    }
+    weekly_scope = next(
+        column
+        for column in inspector.get_columns("weekly_reports")
+        if column["name"] == "scope"
+    )
+    assert weekly_team_id["nullable"] is True
+    assert weekly_scope["type"].length >= len("MULTI_TEAM")
+    assert template_columns["team_id"]["nullable"] is True
+    assert template_columns["tenant_id"]["nullable"] is True
+    assert template_columns["scope"]["type"].length >= len("MULTI_TEAM")
     engine.dispose()
 
 

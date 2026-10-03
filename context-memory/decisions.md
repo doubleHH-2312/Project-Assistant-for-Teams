@@ -146,6 +146,18 @@ Append new decisions. Do not rewrite existing records; add a superseding record.
   separate facts; reconstructing missing trigger timestamps would create false history.
 - Impact: New and seeded data have reproducible blocker timelines. Legacy reports from
   before event capture remain visible as reports but do not fabricate event dates.
+
+## 2026-10-03 — D-018 Direct evidence at each weekly aggregation level
+
+- Decision: Member weekly reports link directly to Daily Reports/status events; Team
+  weekly reports link to confirmed Member reports; multi-Team reports link to confirmed
+  Team reports. Generated facts must cite one of those direct inputs and cannot name a
+  Team or Project absent from supplied evidence.
+- Reason: Direct links make every aggregation reproducible without flattening or
+  silently bypassing the approved confirmation hierarchy.
+- Impact: `weekly_report_teams` and `report_evidence_links` are authoritative scope and
+  lineage records. Confirm remains private/immutable; publication is a separate,
+  idempotent record and later Teams delivery step.
 - Reason: An in-memory replay cache cannot satisfy Teams retry semantics on a
   serverless deployment, while placing complete presentation payloads in audit
   metadata would violate the audit-data minimization rule.

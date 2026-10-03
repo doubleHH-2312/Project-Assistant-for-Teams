@@ -8,7 +8,7 @@
   deployment is now captured in
   `docs/superpowers/specs/2026-10-02-teams-bot-action-platform-design.md`.
 - The user approved the written spec and 11-task TDD implementation plan at
-  `docs/superpowers/plans/2026-10-02-teams-bot-action-platform.md`. Tasks 1-6 are
+  `docs/superpowers/plans/2026-10-02-teams-bot-action-platform.md`. Tasks 1-7 are
   implemented. Every Daily create/edit starts an invocation
   and appends a server-timestamped Work Item Status Event; the report, event, and
   successful outcome commit atomically. Task 4 adds the typed parser/registry/dispatcher
@@ -21,6 +21,11 @@
   overridden, Daily forms expose only active Team projects/work items, and blocker
   summaries use append-only status event dates. Seed data now carries matching
   invocation and event records.
+- Task 7 adds Project-grouped Member/Team weekly evidence, Team-then-Project
+  multi-Team reports, tenant-scoped multi-Team templates, normalized evidence links,
+  immutable revisions, explicit idempotent publication, and private `/weekly`,
+  `/weekly-team`, and `/weekly-multi-team` handlers. The deterministic mock preserves
+  evidence IDs and leaves risk/issue/lesson sections empty when evidence is absent.
 - D-014 records the GPT-first OpenAI-compatible adapter; switching to the company LLM
   is configuration-only after its endpoint passes the shared contract tests.
 - A runnable local web vertical slice is available at `http://localhost:5173` when the
@@ -34,7 +39,7 @@
 
 ## Verification performed
 
-- Backend: Task 6 fresh run passed 62 tests; Ruff and strict mypy passed. Migration
+- Backend: Task 7 fresh run passed 75 tests; Ruff and strict mypy passed. Migration
   tests cover clean install, legacy Daily `team_id` backfill, audit, and action-result
   storage.
 - Frontend: Vitest, ESLint, TypeScript and Vite production build passed.
@@ -48,9 +53,10 @@
 
 ## Next action
 
-Continue Task 7 under RED -> GREEN -> REFACTOR: build project-grouped Member, Team,
-and Multi-team weekly evidence; add evidence links, multi-team persistence, explicit
-publication, and the three weekly action handlers.
+Continue Task 8 under RED -> GREEN -> REFACTOR: add the Microsoft Teams SDK v2
+adapter, verified personal/group/channel context resolution, conversation bindings,
+privacy-aware presenters, Adaptive Cards, `/api/messages`, and the installable bot
+manifest package.
 
 ## External blockers
 

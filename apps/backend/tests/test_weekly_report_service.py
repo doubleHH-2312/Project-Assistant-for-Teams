@@ -51,6 +51,14 @@ class FakeWeeklyRepository:
         self.member_reports: list[WeeklyReport] = []
         self.expected_members = ["user-1", "user-2"]
         self.saved: list[WeeklyReport] = []
+        self.saved_references = []
+        self.tenant_team_ids = {"team-1"}
+
+    async def get_active_tenant_template(self, tenant_id, scope):  # type: ignore[no-untyped-def]
+        return None
+
+    async def list_team_ids_in_tenant(self, team_ids, tenant_id):  # type: ignore[no-untyped-def]
+        return sorted(team_id for team_id in team_ids if team_id in self.tenant_team_ids)
 
     async def get_active_template(
         self, team_id: str, scope: ReportScope
@@ -77,6 +85,9 @@ class FakeWeeklyRepository:
             if report.user_id == user_id and week_start <= report.report_date <= week_end
         ]
 
+    async def list_status_events(self, daily_report_ids):  # type: ignore[no-untyped-def]
+        return []
+
     async def list_confirmed_member_reports(
         self, team_id: str, week_start: date, week_end: date
     ) -> list[WeeklyReport]:
@@ -90,6 +101,12 @@ class FakeWeeklyRepository:
 
     async def list_expected_member_ids(self, team_id: str) -> list[str]:
         return self.expected_members
+
+    async def list_confirmed_team_reports(self, team_ids, week_start, week_end):  # type: ignore[no-untyped-def]
+        return []
+
+    async def find_multiteam_report(self, tenant_id, team_ids, week_start):  # type: ignore[no-untyped-def]
+        return None
 
     async def find_report(
         self, scope: ReportScope, team_id: str, subject_user_id: str | None, week_start: date
@@ -113,6 +130,13 @@ class FakeWeeklyRepository:
             self.saved.append(report)
         return report
 
+    async def save_generated(self, report, team_ids, references):  # type: ignore[no-untyped-def]
+        self.saved_references = list(references)
+        return await self.save(report)
+
+    async def save_revision(self, report, team_ids, supersedes_id):  # type: ignore[no-untyped-def]
+        return await self.save(report)
+
     async def get_by_id(self, report_id: str, team_id: str) -> WeeklyReport | None:
         return next(
             (
@@ -122,6 +146,10 @@ class FakeWeeklyRepository:
             ),
             None,
         )
+
+    async def list_report_team_ids(self, report_id: str) -> list[str]:
+        report = next(item for item in self.saved if item.id == report_id)
+        return [report.team_id] if report.team_id else []
 
 
 class AllowAuthorization:
@@ -281,6 +309,28 @@ async def test_provider_failure_is_sanitized_without_persistence() -> None:
     assert unavailable.value.status_code == 503
     assert unavailable.value.code == "LLM_UNAVAILABLE"
     assert "sensitive" not in unavailable.value.message
+    assert repository.saved == []
+
+
+@pytest.mark.asyncio
+async def test_single_team_generation_hides_team_outside_actor_tenant() -> None:
+    repository = FakeWeeklyRepository()
+    repository.tenant_team_ids.clear()
+    service = WeeklyReportService(
+        repository, MockLLMProvider(), AllowAuthorization()  # type: ignore[arg-type]
+    )
+
+    with pytest.raises(AppError) as hidden:
+        await service.generate(
+            user(),
+            WeeklyGenerateRequest(
+                teamId="team-1",
+                scope=ReportScope.MEMBER,
+                weekStart=date(2026, 9, 28),
+            ),
+        )
+
+    assert hidden.value.code == "TEAM_NOT_FOUND"
     assert repository.saved == []
 
 

@@ -15,6 +15,12 @@ from project_assistant.modules.actions.handlers.overview import (
     DailySummaryActionHandler,
     OverviewService,
 )
+from project_assistant.modules.actions.handlers.weekly import (
+    MemberWeeklyActionHandler,
+    MultiTeamWeeklyActionHandler,
+    TeamWeeklyActionHandler,
+    WeeklyGenerationService,
+)
 from project_assistant.modules.actions.registry import ActionRegistry
 from project_assistant.modules.actions.results import ActionResultStore
 from project_assistant.modules.audit.service import AuditService
@@ -32,6 +38,7 @@ def build_reporting_action_registry(
     daily_service: DailySubmitService,
     history_service: HistoryService,
     overview_service: OverviewService,
+    weekly_service: WeeklyGenerationService,
     authorization: AuthorizationService,
 ) -> ActionRegistry:
     registry = build_action_registry(
@@ -39,6 +46,9 @@ def build_reporting_action_registry(
             DailyActionHandler(daily_service),
             HistoryActionHandler(history_service),
             DailySummaryActionHandler(overview_service),
+            MemberWeeklyActionHandler(weekly_service),
+            TeamWeeklyActionHandler(weekly_service),
+            MultiTeamWeeklyActionHandler(weekly_service),
         )
     )
     registry.register(HelpActionHandler(registry, authorization))
