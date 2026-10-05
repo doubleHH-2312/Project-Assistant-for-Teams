@@ -1125,7 +1125,7 @@ export interface operations {
                 };
                 content: {
                     readonly "application/json": {
-                        readonly [key: string]: string;
+                        readonly [key: string]: unknown;
                     };
                 };
             };

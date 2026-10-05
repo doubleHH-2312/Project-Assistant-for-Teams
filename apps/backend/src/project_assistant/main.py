@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from project_assistant.api.session import router as session_router
 from project_assistant.api.system import router as system_router
 from project_assistant.core.config import get_settings
-from project_assistant.core.database import SessionFactory, create_schema
+from project_assistant.core.database import SessionFactory
 from project_assistant.core.errors import (
     AppError,
     app_error_handler,
@@ -24,9 +24,6 @@ from project_assistant.modules.weekly_reports.router import router as weekly_rep
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    settings = get_settings()
-    if settings.app_env in {"local", "test"}:
-        await create_schema()
     teams_app = getattr(app.state, "teams_app", None)
     if teams_app is not None and not getattr(app.state, "teams_initialized", False):
         await teams_app.initialize()

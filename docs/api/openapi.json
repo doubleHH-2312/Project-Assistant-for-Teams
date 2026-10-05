@@ -1712,9 +1712,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
+                  "additionalProperties": true,
                   "title": "Response Readiness Health Ready Get",
                   "type": "object"
                 }

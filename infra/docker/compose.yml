@@ -58,3 +58,4 @@ services:
 
 volumes:
   project-assistant-db:
+    name: ${PROJECT_ASSISTANT_DB_VOLUME:-docker_project-assistant-db}

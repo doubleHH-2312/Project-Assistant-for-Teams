@@ -492,7 +492,7 @@
 
   Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
   `git commit -m "feat: add role-aware reporting web app"`
 
@@ -534,7 +534,7 @@
 
   Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
   `git commit -m "feat: add Vercel Supabase deployment profile"`
 
@@ -555,31 +555,31 @@
 - Produces standard gates: format check -> lint -> typecheck -> backend/frontend tests -> clean migration -> OpenAPI drift -> web build -> Playwright -> container build -> secret scan.
 - Produces one documented standalone demo path and one explicitly gated real-Teams path.
 
-- [ ] **Step 1: Write Playwright acceptance tests**
+- [x] **Step 1: Write Playwright acceptance tests**
 
   Exercise Member Daily -> History -> Member Weekly confirmation, Tech Lead Daily Summary -> Team Weekly confirmation, PM Multi-team Weekly, forbidden Member views, and explicit publish confirmation with mock Teams transport.
 
-- [ ] **Step 2: Implement CI and local commands**
+- [x] **Step 2: Implement CI and local commands**
 
   Add `make format-check`, `make openapi-check`, `make migration-check`, `make security-check`, and a deterministic `make verify` used by CI.
 
-- [ ] **Step 3: Run focused browser tests**
+- [x] **Step 3: Run focused browser tests**
 
   Run: `make demo` then `make e2e`.
 
   Expected: all standalone flows PASS; real Teams E2E remains marked gated, never simulated as verified.
 
-- [ ] **Step 4: Run fresh full verification**
+- [x] **Step 4: Run fresh full verification**
 
   Run: `make lint && make typecheck && make test && make web-test && make openapi-check && make build && make teams-package && make build-images && make smoke && make e2e`
 
   Expected: every command exits 0. Record exact counts and any externally gated checks.
 
-- [ ] **Step 5: Review complete diff and security boundaries**
+- [x] **Step 5: Review complete diff and security boundaries**
 
   Inspect migrations, tenant/team predicates, action metadata, secret patterns, SDK auth modes, full-report logging, generated contract drift, manifest domains, accessibility, and accidental files.
 
-- [ ] **Step 6: Update durable handoff and commit**
+- [x] **Step 6: Update durable handoff and commit**
 
   Mark completed task IDs with evidence, record unresolved Teams/Entra/Vercel/Supabase/company-LLM gates, refresh `current-handoff.md`, and commit with `chore: harden delivery workflow`.
 

@@ -10,7 +10,7 @@
 | On-prem | Optional fallback | Server access may be delayed | Keep Docker Compose portable and document prerequisites |
 | Product template | Provisional | Real team weekly template may differ | Version templates and replace configuration, not core logic |
 | Sensitive data | Active risk | Reports may contain confidential content | Redaction, least privilege, approved LLM data policy, anonymized seed |
-| MVP QA | In progress | No Playwright/real-Teams/accessibility audit yet | Add browser E2E and audit before production claim |
+| MVP QA | Local gate complete | Standalone mock acceptance is verified, but real Teams and cloud behavior cannot be inferred from it | Keep real integration gates blocked until tenant and cloud smoke evidence exists |
 
 Mock modes must be visible in health/configuration output and must never be reported
 as successful real integration tests.

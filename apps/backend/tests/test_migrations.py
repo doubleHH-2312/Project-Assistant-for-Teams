@@ -62,6 +62,11 @@ def test_initial_migration_builds_expected_schema(tmp_path: Path) -> None:
         column["name"]
         for column in inspector.get_columns("teams_conversation_bindings")
     }
+    membership_columns = {
+        column["name"]: column
+        for column in inspector.get_columns("team_memberships")
+    }
+    assert membership_columns["joined_at"]["default"] is not None
     assert {
         "tenant_id",
         "conversation_id",

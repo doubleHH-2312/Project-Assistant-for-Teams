@@ -89,6 +89,7 @@ class DailyReportService:
         audit: RequestAuditContext,
     ) -> DailyReport:
         invocation = await self._start_invocation(team_id, audit)
+        invocation_id = invocation.id
         try:
             if request.team_id != team_id:
                 raise AppError(422, "TEAM_SCOPE_MISMATCH", "Payload Team does not match scope")
@@ -139,13 +140,13 @@ class DailyReportService:
             )
             status_event = self._status_event(report, invocation, audit.source)
             return await self.repository.save_with_event_and_success(
-                report, status_event, invocation.id
+                report, status_event, invocation_id
             )
         except AppError as error:
-            await self._record_failure(invocation, error)
+            await self._record_failure(invocation_id, error)
             raise
         except Exception:
-            await self.audit_service.fail(invocation.id, "INTERNAL_ERROR")
+            await self.audit_service.fail(invocation_id, "INTERNAL_ERROR")
             raise
 
     async def update(
@@ -157,6 +158,7 @@ class DailyReportService:
         audit: RequestAuditContext,
     ) -> DailyReport:
         invocation = await self._start_invocation(team_id, audit)
+        invocation_id = invocation.id
         try:
             await self.authorization.require(
                 actor.id, [team_id], Permission.SUBMIT_OWN_DAILY
@@ -176,13 +178,13 @@ class DailyReportService:
                 supersedes_event_id=previous_event.id if previous_event else None,
             )
             return await self.repository.save_with_event_and_success(
-                report, status_event, invocation.id
+                report, status_event, invocation_id
             )
         except AppError as error:
-            await self._record_failure(invocation, error)
+            await self._record_failure(invocation_id, error)
             raise
         except Exception:
-            await self.audit_service.fail(invocation.id, "INTERNAL_ERROR")
+            await self.audit_service.fail(invocation_id, "INTERNAL_ERROR")
             raise
 
     async def list_for_user(
@@ -247,12 +249,12 @@ class DailyReportService:
         )
 
     async def _record_failure(
-        self, invocation: ActionInvocation, error: AppError
+        self, invocation_id: str, error: AppError
     ) -> None:
         if error.status_code == 403:
-            await self.audit_service.deny(invocation.id, error.code)
+            await self.audit_service.deny(invocation_id, error.code)
         else:
-            await self.audit_service.fail(invocation.id, error.code)
+            await self.audit_service.fail(invocation_id, error.code)
 
     @staticmethod
     def _status_event(

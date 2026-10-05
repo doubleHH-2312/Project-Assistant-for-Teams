@@ -1,11 +1,16 @@
-from datetime import date
+from datetime import UTC, date, datetime
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session
 
 from project_assistant.core.database import Base
 from project_assistant.modules import model_registry  # noqa: F401
+from project_assistant.modules.audit.models import (
+    ActionInvocation,
+    InvocationStatus,
+    WorkItemStatusEvent,
+)
 from project_assistant.modules.daily_reports.models import DailyReport, WorkStatus
 from project_assistant.modules.daily_reports.repository import SqlAlchemyDailyReportRepository
 from project_assistant.modules.memberships.models import TeamMembership, TeamRole
@@ -34,6 +39,24 @@ class SyncBackedAsyncSession:
 
     async def scalars(self, statement):  # type: ignore[no-untyped-def]
         return self.session.scalars(statement)
+
+    def add(self, instance):  # type: ignore[no-untyped-def]
+        self.session.add(instance)
+
+    async def get(self, model, identity):  # type: ignore[no-untyped-def]
+        return self.session.get(model, identity)
+
+    async def flush(self) -> None:
+        self.session.flush()
+
+    async def commit(self) -> None:
+        self.session.commit()
+
+    async def rollback(self) -> None:
+        self.session.rollback()
+
+    async def refresh(self, instance) -> None:  # type: ignore[no-untyped-def]
+        self.session.refresh(instance)
 
 
 def _seed_scoped_records(session: Session) -> None:
@@ -202,4 +225,93 @@ async def test_repositories_never_cross_explicit_team_scope() -> None:
         assert not await notification.has_daily_report(
             "user-1", "team-b", date(2026, 10, 1)
         )
+    engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_daily_repository_persists_report_before_its_status_event() -> None:
+    engine = create_engine("sqlite:///:memory:")
+    event.listen(
+        engine,
+        "connect",
+        lambda connection, _: connection.execute("PRAGMA foreign_keys=ON"),
+    )
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        session.add(Team(id="team-a", tenant_id="tenant-1", name="Team A"))
+        session.add(
+            User(
+                id="user-1",
+                tenant_id="tenant-1",
+                external_user_id="entra-1",
+                name="Member One",
+                email="member1@example.test",
+            )
+        )
+        session.flush()
+        session.add(Project(id="project-a", team_id="team-a", name="Project A"))
+        session.flush()
+        session.add(
+            WorkItem(id="item-a", project_id="project-a", code="A-1", title="Task A")
+        )
+        session.commit()
+        invocation = ActionInvocation(
+            id="invocation-new-daily",
+            action="daily.submit",
+            actor_id="user-1",
+            tenant_id="tenant-1",
+            team_id="team-a",
+            project_id="project-a",
+            conversation_id="web:user-1",
+            conversation_type="WEB",
+            triggered_at=datetime(2026, 10, 5, 8, tzinfo=UTC),
+            local_datetime=datetime(2026, 10, 5, 15, tzinfo=UTC),
+            local_date=date(2026, 10, 5),
+            timezone="Asia/Ho_Chi_Minh",
+            correlation_id="correlation-new-daily",
+            idempotency_key="daily:new:2026-10-05",
+            status=InvocationStatus.PENDING,
+            metadata_json={},
+        )
+        session.add(invocation)
+        session.commit()
+        report = DailyReport(
+            id="daily-new",
+            team_id="team-a",
+            user_id="user-1",
+            project_id="project-a",
+            work_item_id="item-a",
+            report_date=date(2026, 10, 5),
+            status=WorkStatus.IN_PROGRESS,
+            work_summary="Verify transaction ordering",
+            next_action="Run browser acceptance",
+        )
+        status_event = WorkItemStatusEvent(
+            id="event-new-daily",
+            daily_report_id=report.id,
+            action_invocation_id=invocation.id,
+            team_id="team-a",
+            project_id="project-a",
+            work_item_id="item-a",
+            user_id="user-1",
+            status=WorkStatus.IN_PROGRESS,
+            effective_blocker=None,
+            business_date=date(2026, 10, 5),
+            recorded_at=datetime(2026, 10, 5, 8, tzinfo=UTC),
+            local_datetime=datetime(2026, 10, 5, 15, tzinfo=UTC),
+            local_date=date(2026, 10, 5),
+            timezone="Asia/Ho_Chi_Minh",
+            source="WEB",
+        )
+
+        repository = SqlAlchemyDailyReportRepository(  # type: ignore[arg-type]
+            SyncBackedAsyncSession(session)
+        )
+        saved = await repository.save_with_event_and_success(
+            report, status_event, invocation.id
+        )
+
+        assert saved.id == "daily-new"
+        assert session.get(WorkItemStatusEvent, status_event.id) is not None
+        assert invocation.status == InvocationStatus.SUCCEEDED
     engine.dispose()

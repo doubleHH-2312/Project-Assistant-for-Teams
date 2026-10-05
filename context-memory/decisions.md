@@ -200,3 +200,15 @@ Append new decisions. Do not rewrite existing records; add a superseding record.
 - Impact: Scheduled reminder jobs remain disabled in this profile. Readiness exposes
   the active deployment and integration modes; real Vercel/Supabase smoke remains an
   external credential gate.
+
+## 2026-10-05 — D-022 Migrations own schema lifecycle and FK write ordering
+
+- Decision: Alembic is the only schema lifecycle mechanism, including local demo
+  startup. Aggregate writes without ORM relationships explicitly flush parent rows
+  before inserting dependent audit/status rows.
+- Reason: Browser acceptance against a clean PostgreSQL volume exposed two issues that
+  unit-only startup had hidden: `create_all` did not evolve an existing schema, and the
+  unit of work could insert a status event before its new Daily Report parent.
+- Impact: Backend images include Alembic files; `make demo` migrates before seed;
+  migration `0008` adds the missing Membership timestamp default; Daily persistence
+  has a foreign-key-order regression test and retains stable audit IDs after rollback.

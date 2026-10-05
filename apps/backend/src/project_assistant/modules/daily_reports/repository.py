@@ -134,6 +134,10 @@ class SqlAlchemyDailyReportRepository:
     ) -> DailyReport:
         try:
             self.session.add(report)
+            # The status event references the report, but the models intentionally do
+            # not expose an ORM relationship. Flush the aggregate root explicitly so
+            # SQLAlchemy cannot order the event insert ahead of its parent row.
+            await self.session.flush()
             self.session.add(status_event)
             invocation = await self.session.get(ActionInvocation, invocation_id)
             if invocation is None:

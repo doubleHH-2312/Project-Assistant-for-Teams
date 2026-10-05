@@ -54,3 +54,16 @@ they hold a membership.
 The checked-in manifest is a template. The SDK adapter and package are locally tested,
 but do not claim a real Teams/Entra/proactive-delivery integration until the external
 gates are open and an installed-app smoke test has passed in the target tenant.
+
+## Tenant acceptance checklist
+
+1. Personal chat: `/help`, `/daily`, `/history`, and `/weekly` return private cards.
+2. Group/channel: mention the bot followed by `/help`; ordinary chat without an action
+   is ignored and is not persisted.
+3. PM binds the installation to exactly one application Team; a Tech Lead cannot
+   change the binding.
+4. Shared conversations receive no private report body.
+5. Card resubmission is idempotent, and a missing installation/conversation ID is
+   recorded as delivery failure.
+6. `/weekly-multi-team` runs only in personal chat and requires the same eligible role
+   across every selected Team.
