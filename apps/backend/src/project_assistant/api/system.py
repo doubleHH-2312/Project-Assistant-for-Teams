@@ -11,17 +11,18 @@ async def liveness() -> dict[str, str]:
 
 
 @router.get("/health/ready")
-async def readiness() -> dict[str, str]:
+async def readiness() -> dict[str, object]:
     settings = get_settings()
     return {
         "status": "ready",
-        "authMode": settings.auth_mode,
-        "llmProvider": settings.llm_provider,
-        "teamsTransport": settings.teams_transport,
+        "database": {"deploymentMode": settings.database_deployment_mode},
+        "auth": {"mode": settings.auth_mode},
+        "llm": {"provider": settings.llm_provider},
+        "teams": {"transport": settings.teams_transport},
+        "scheduledJobsEnabled": settings.scheduled_jobs_enabled,
     }
 
 
 @router.get("/version")
 async def version() -> dict[str, str]:
     return {"version": get_settings().app_version}
-

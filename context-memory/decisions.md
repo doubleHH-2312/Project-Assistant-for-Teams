@@ -189,3 +189,14 @@ Append new decisions. Do not rewrite existing records; add a superseding record.
   must not expose Team-local actions in the wrong Team context.
 - Impact: The SPA never hard-codes role grants and uses the generated client boundary;
   backend authorization remains authoritative for every request.
+
+## 2026-10-05 — D-021 Serverless database connections are request-process safe
+
+- Decision: Vercel uses one module-level FastAPI application and Supabase transaction
+  pooler traffic uses SQLAlchemy `NullPool`, required TLS and asyncpg statement cache
+  size zero. Schema migration uses a separate direct URL outside application startup.
+- Reason: Serverless instances are short-lived and Supavisor transaction mode does not
+  retain session state or support prepared statements.
+- Impact: Scheduled reminder jobs remain disabled in this profile. Readiness exposes
+  the active deployment and integration modes; real Vercel/Supabase smoke remains an
+  external credential gate.

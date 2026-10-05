@@ -35,7 +35,7 @@ dev = [
 packages = ["apps/backend/src/project_assistant"]
 
 [tool.pytest.ini_options]
-pythonpath = ["apps/backend/src"]
+pythonpath = ["apps/backend/src", "."]
 testpaths = ["apps/backend/tests"]
 asyncio_mode = "auto"
 

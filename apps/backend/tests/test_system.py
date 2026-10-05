@@ -22,6 +22,37 @@ async def test_liveness_and_correlation_id() -> None:
     assert response.headers["X-Correlation-ID"] == "test-id"
 
 
+@pytest.mark.asyncio
+async def test_readiness_exposes_serverless_integration_modes() -> None:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/health/ready")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["database"]["deploymentMode"] in {"persistent", "serverless"}
+    assert body["auth"]["mode"] in {"local", "entra"}
+    assert body["llm"]["provider"] in {"mock", "openai_compatible"}
+    assert body["teams"]["transport"] in {"mock", "sdk"}
+    assert body["scheduledJobsEnabled"] is False
+
+
+def test_production_rejects_local_auth_and_teams_skip_auth() -> None:
+    with pytest.raises(ValidationError, match="Local authentication"):
+        Settings(_env_file=None, app_env="production", auth_mode="local")
+    with pytest.raises(ValidationError, match="Teams unauthenticated"):
+        Settings(
+            _env_file=None,
+            app_env="production",
+            auth_mode="entra",
+            dev_auth_enabled=False,
+            entra_tenant_id="tenant",
+            entra_client_id="client",
+            entra_jwks_url="https://login.example.test/jwks",
+            teams_skip_auth=True,
+        )
+
+
 def test_llm_configuration_builds_mock_or_openai_compatible_provider() -> None:
     mock_settings = Settings(_env_file=None, app_env="test", llm_provider="mock")
     real_settings = Settings(

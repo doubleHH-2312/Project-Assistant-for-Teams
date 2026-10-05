@@ -16,6 +16,8 @@ class Settings(BaseSettings):
         "postgresql+asyncpg://project_assistant:project_assistant@localhost:5432/"
         "project_assistant"
     )
+    database_deployment_mode: Literal["persistent", "serverless"] = "persistent"
+    scheduled_jobs_enabled: bool = False
     auth_mode: Literal["local", "entra"] = "local"
     dev_auth_enabled: bool = True
     dev_default_user_id: str = "user-member-1"
@@ -61,6 +63,8 @@ class Settings(BaseSettings):
             raise ValueError(
                 "Teams unauthenticated mode is forbidden outside local/test"
             )
+        if self.database_deployment_mode == "serverless" and self.scheduled_jobs_enabled:
+            raise ValueError("Scheduled jobs cannot run inside the serverless API process")
         if self.teams_transport == "sdk" and not self.teams_skip_auth and not all(
             [self.teams_app_id, self.teams_app_password, self.entra_tenant_id]
         ):

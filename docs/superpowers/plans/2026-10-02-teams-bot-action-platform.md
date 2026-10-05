@@ -514,21 +514,21 @@
 - Produces `DATABASE_DEPLOYMENT_MODE=serverless|persistent`; serverless uses SSL, `NullPool`, and asyncpg statement cache size zero.
 - Produces health/readiness fields for database, Teams mode, LLM mode, and `scheduledJobsEnabled=false`.
 
-- [ ] **Step 1: Write failing configuration and cold-start tests**
+- [x] **Step 1: Write failing configuration and cold-start tests**
 
   Assert Vercel module import, one Teams initialization, serverless engine options, production rejection of local auth/Teams skip-auth, and visible disabled scheduler.
 
-- [ ] **Step 2: Run RED tests**
+- [x] **Step 2: Run RED tests**
 
   Run: `uv run pytest apps/backend/tests/test_serverless_database.py apps/backend/tests/test_vercel_entrypoint.py apps/backend/tests/test_system.py -q`
 
   Expected: FAIL because entrypoint/profile do not exist.
 
-- [ ] **Step 3: Implement Vercel routing, Supabase pooler configuration, and runbook**
+- [x] **Step 3: Implement Vercel routing, Supabase pooler configuration, and runbook**
 
   Document transaction-pooler URL, direct migration URL, environment variables, preview smoke, migration procedure, free-plan limitations, rollback, and no keep-alive workaround. Do not place credentials or real project refs in Git.
 
-- [ ] **Step 4: Run GREEN and deployment-config checks**
+- [x] **Step 4: Run GREEN and deployment-config checks**
 
   Run: `uv run pytest apps/backend/tests/test_serverless_database.py apps/backend/tests/test_vercel_entrypoint.py apps/backend/tests/test_system.py -q && uv run python -m py_compile api/index.py`
 

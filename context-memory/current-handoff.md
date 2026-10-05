@@ -37,6 +37,9 @@
   and a responsive Fluent UI web application. Member, Tech Lead and PM navigation is
   derived from the active Team permissions; weekly confirmation, revision and Teams
   publication are separate explicit controls.
+- Task 10 adds a Vercel ASGI entrypoint that reuses the shared FastAPI singleton,
+  Supabase transaction-pooler-safe asyncpg settings, structured readiness modes and a
+  deployment/migration/rollback runbook. No real cloud deployment has been claimed.
 - D-014 records the GPT-first OpenAI-compatible adapter; switching to the company LLM
   is configuration-only after its endpoint passes the shared contract tests.
 - A runnable local web vertical slice is available at `http://localhost:5173` when the
@@ -50,7 +53,7 @@
 
 ## Verification performed
 
-- Backend: Task 9 fresh run passed 91 tests; Ruff and strict mypy passed. Migration
+- Backend: Task 10 fresh run passed 97 tests; Ruff and strict mypy passed. Migration
   tests cover clean install, legacy Daily `team_id` backfill, audit, and action-result
   storage.
 - Frontend: 8 Vitest tests, ESLint, strict TypeScript and Vite production build passed.
@@ -66,9 +69,9 @@
 
 ## Next action
 
-Continue Task 10 under RED -> GREEN -> REFACTOR: add the Vercel ASGI entrypoint,
-Supabase serverless database profile, readiness fields and deployment runbook without
-claiming a real deployment smoke before external project credentials are supplied.
+Continue Task 11 under RED -> GREEN -> REFACTOR: add Playwright acceptance coverage,
+deterministic CI/security/migration gates, local demo instructions, run full verification
+and review the complete diff before final handoff.
 
 ## External blockers
 
