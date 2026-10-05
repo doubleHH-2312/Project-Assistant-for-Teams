@@ -1,4 +1,4 @@
-.PHONY: bootstrap dev demo down seed lint typecheck test web-test e2e build migrate migration build-images smoke teams-package
+.PHONY: bootstrap dev demo down seed lint typecheck test web-test e2e build migrate migration build-images smoke teams-package openapi openapi-check
 
 bootstrap:
 	uv sync --all-groups
@@ -54,3 +54,11 @@ smoke:
 
 teams-package:
 	./scripts/package-teams-app.sh
+
+openapi:
+	uv run python scripts/export-openapi.py
+	corepack pnpm --filter @project-assistant/api-client generate
+
+openapi-check:
+	uv run python scripts/export-openapi.py --check
+	corepack pnpm --filter @project-assistant/api-client generate:check

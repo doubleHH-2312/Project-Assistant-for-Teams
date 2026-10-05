@@ -464,29 +464,29 @@
 - Produces generated OpenAPI types and a typed client with `getSession`, `listTeams`, Daily/History/Overview, weekly generate/edit/confirm/revise, and publish methods.
 - Produces navigation filtered by server-returned permissions, explicit current Team selection, and separate confirm/publish controls.
 
-- [ ] **Step 1: Write failing backend API contract tests**
+- [x] **Step 1: Write failing backend API contract tests**
 
   Cover `/me`, memberships/permissions, Team-scoped daily/history/overview endpoints, all weekly scopes, idempotency headers, consistent error envelope, and publication.
 
-- [ ] **Step 2: Expose thin routes and generate OpenAPI/client types**
+- [x] **Step 2: Expose thin routes and generate OpenAPI/client types**
 
   Run `uv run python scripts/export-openapi.py` then `corepack pnpm --filter @project-assistant/api-client generate`; add `make openapi-check` that fails on drift.
 
-- [ ] **Step 3: Write failing frontend behavior tests**
+- [x] **Step 3: Write failing frontend behavior tests**
 
   Cover Member/Tech Lead/PM navigation, multi-Team selector, loading/empty/error/forbidden/stale retry, Daily history timeline dates, weekly edit-confirm-revise, and explicit publish confirmation.
 
-- [ ] **Step 4: Run RED frontend tests**
+- [x] **Step 4: Run RED frontend tests**
 
   Run: `corepack pnpm --filter @project-assistant/web test`
 
   Expected: FAIL because feature pages and generated methods are absent.
 
-- [ ] **Step 5: Implement route shell and feature pages using only generated client contracts**
+- [x] **Step 5: Implement route shell and feature pages using only generated client contracts**
 
   Preserve keyboard navigation, labels, focus visibility, minimum 44px targets, responsive layouts, and integration-mode visibility. Backend authorization remains authoritative.
 
-- [ ] **Step 6: Run GREEN frontend/API verification**
+- [x] **Step 6: Run GREEN frontend/API verification**
 
   Run: `uv run pytest apps/backend/tests -q && make openapi-check && corepack pnpm --filter @project-assistant/web test && corepack pnpm --filter @project-assistant/web lint && corepack pnpm --filter @project-assistant/web typecheck && corepack pnpm --filter @project-assistant/web build`
 

@@ -1,6 +1,7 @@
 from typing import Any
 
 from fastapi import Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
@@ -37,3 +38,19 @@ async def app_error_handler(request: Request, error: AppError) -> JSONResponse:
     )
     return JSONResponse(status_code=error.status_code, content=body.model_dump(by_alias=True))
 
+
+async def request_validation_error_handler(
+    request: Request, error: RequestValidationError
+) -> JSONResponse:
+    correlation_id = getattr(request.state, "correlation_id", "unknown")
+    fields = [
+        ".".join(str(part) for part in item["loc"])
+        for item in error.errors()
+    ]
+    body = ErrorBody(
+        code="REQUEST_VALIDATION_FAILED",
+        message="The request is invalid",
+        details={"fields": fields},
+        correlationId=correlation_id,
+    )
+    return JSONResponse(status_code=422, content=body.model_dump(by_alias=True))

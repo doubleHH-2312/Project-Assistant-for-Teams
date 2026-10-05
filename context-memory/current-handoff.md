@@ -2,7 +2,7 @@
 
 ## State
 
-- Date: 2026-10-03 (Asia/Ho_Chi_Minh).
+- Date: 2026-10-05 (Asia/Ho_Chi_Minh).
 - The approved conversational design for the extensible Teams bot, team-scoped RBAC,
   append-only audit/status history, multi-team reporting, and Vercel/Supabase demo
   deployment is now captured in
@@ -32,6 +32,11 @@
   and a bot-enabled v1.23 manifest. Ordinary chat text is discarded before any
   identity lookup or persistence; shared conversations never receive private report
   bodies.
+- Task 9 adds deterministic OpenAPI export and drift checking, generated TypeScript
+  contracts, `/me` Team memberships/permissions, Daily history/options, publication,
+  and a responsive Fluent UI web application. Member, Tech Lead and PM navigation is
+  derived from the active Team permissions; weekly confirmation, revision and Teams
+  publication are separate explicit controls.
 - D-014 records the GPT-first OpenAI-compatible adapter; switching to the company LLM
   is configuration-only after its endpoint passes the shared contract tests.
 - A runnable local web vertical slice is available at `http://localhost:5173` when the
@@ -45,10 +50,11 @@
 
 ## Verification performed
 
-- Backend: Task 8 fresh run passed 87 tests; Ruff and strict mypy passed. Migration
+- Backend: Task 9 fresh run passed 91 tests; Ruff and strict mypy passed. Migration
   tests cover clean install, legacy Daily `team_id` backfill, audit, and action-result
   storage.
-- Frontend: Vitest, ESLint, TypeScript and Vite production build passed.
+- Frontend: 8 Vitest tests, ESLint, strict TypeScript and Vite production build passed.
+- Contracts: deterministic OpenAPI export and generated TypeScript drift checks pass.
 - Containers: API, worker, and web images built; Compose health ordering passed.
 - Live HTTP: web HTML and proxied liveness returned 200; overview returned seeded data;
   daily `BLOCKED` report returned the expected fallback `effectiveBlocker`; member
@@ -60,10 +66,9 @@
 
 ## Next action
 
-Continue Task 9 under RED -> GREEN -> REFACTOR: expose the remaining thin Team/action
-API contracts, export OpenAPI, generate the TypeScript client, and build the role-aware
-web routes for Daily, History, Daily Summary, weekly review, Team settings, and
-integration status.
+Continue Task 10 under RED -> GREEN -> REFACTOR: add the Vercel ASGI entrypoint,
+Supabase serverless database profile, readiness fields and deployment runbook without
+claiming a real deployment smoke before external project credentials are supplied.
 
 ## External blockers
 

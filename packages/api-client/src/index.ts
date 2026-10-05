@@ -1,68 +1,51 @@
-export type WorkStatus =
-  | "NOT_STARTED"
-  | "IN_PROGRESS"
-  | "BLOCKED"
-  | "READY_FOR_REVIEW"
-  | "DONE";
+import type { components } from "./schema";
 
-export interface DailyReportInput {
-  projectId: string;
-  workItemId: string;
-  reportDate: string;
-  status: WorkStatus;
-  workSummary: string;
-  blocker: string | null;
-  nextAction: string;
-}
+export type Permission = components["schemas"]["Permission"];
+export type TeamRole = components["schemas"]["TeamRole"];
+export type TeamAccess = components["schemas"]["TeamAccess"];
+export type SessionSnapshot = components["schemas"]["SessionSnapshot"];
+export type WorkStatus = components["schemas"]["WorkStatus"];
+export type DailyReportInput = components["schemas"]["DailyReportCreate"];
+export type DailyReportUpdate = components["schemas"]["DailyReportUpdate"];
+export type DailyReport = components["schemas"]["DailyReportRead"];
+export type TeamOverview = components["schemas"]["TeamOverview"];
+export type ReportScope = components["schemas"]["ReportScope"];
+export type WeeklyGenerateRequest = components["schemas"]["WeeklyGenerateRequest"];
+export type WeeklyReport = components["schemas"]["WeeklyReportRead"];
+export type Publication = components["schemas"]["PublicationRead"];
 
-export interface DailyReport extends DailyReportInput {
-  id: string;
-  userId: string;
-  effectiveBlocker: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface TeamOverview {
-  reportingDate: string;
-  coverage: { submitted: number; expected: number; percentage: number };
-  missingReporters: Array<{ id: string; name: string }>;
-  statusCounts: Record<string, number>;
-  blockers: Array<{
-    reportId: string;
-    userId: string;
-    workItemId: string;
-    effectiveBlocker: string;
-    ageDays: number;
-    nextAction: string;
+export interface DailyOptions {
+  projects: ReadonlyArray<{ id: string; name: string }>;
+  workItems: ReadonlyArray<{
+    id: string;
+    projectId: string;
+    code: string;
+    title: string;
   }>;
 }
 
-export interface WeeklyReport {
-  id: string;
-  scope: "MEMBER" | "TEAM";
-  subjectUserId: string | null;
+export interface DailyHistoryFilters {
   teamId: string;
-  weekStart: string;
-  weekEnd: string;
-  contentJson: Record<string, string[]>;
-  missingContributors: string[];
-  inputRecordIds: string[];
-  generationSource: string;
-  generationMetadata: Record<string, unknown>;
-  status: "DRAFT" | "GENERATED" | "EDITED" | "CONFIRMED";
-  templateId: string;
-  templateVersion: number;
-  supersedesId: string | null;
-  confirmedAt: string | null;
+  dateFrom?: string;
+  dateTo?: string;
+  projectId?: string;
+  status?: WorkStatus;
+}
+
+export interface ApiErrorBody {
+  code?: string;
+  message?: string;
+  details?: Record<string, unknown>;
+  correlationId?: string;
 }
 
 export class ApiError extends Error {
   constructor(
-    public status: number,
-    public code: string,
+    public readonly status: number,
+    public readonly code: string,
     message: string,
-    public correlationId?: string,
+    public readonly details: Record<string, unknown> = {},
+    public readonly correlationId?: string,
   ) {
     super(message);
   }
@@ -75,28 +58,126 @@ export class ProjectAssistantClient {
     private readonly token?: string,
   ) {}
 
-  createDailyReport(input: DailyReportInput): Promise<DailyReport> {
-    return this.request("/daily-reports", { method: "POST", body: JSON.stringify(input) });
+  getSession(): Promise<SessionSnapshot> {
+    return this.request("/me");
   }
 
-  listMyDailyReports(): Promise<DailyReport[]> {
-    return this.request("/daily-reports/me");
+  listTeams(): Promise<readonly TeamAccess[]> {
+    return this.request("/teams");
   }
 
-  getOverview(teamId: string, reportingDate: string): Promise<TeamOverview> {
-    const query = new URLSearchParams({ reportingDate });
-    return this.request(`/teams/${teamId}/overview?${query}`);
+  listDailyOptions(teamId: string): Promise<DailyOptions> {
+    return this.request(`/daily-reports/options?${queryString({ teamId })}`);
   }
 
-  generateWeekly(scope: "MEMBER" | "TEAM", weekStart: string): Promise<WeeklyReport> {
-    return this.request("/weekly-reports/generate", {
+  createDailyReport(
+    input: DailyReportInput,
+    idempotencyKey = createIdempotencyKey("daily"),
+  ): Promise<DailyReport> {
+    return this.request("/daily-reports", {
       method: "POST",
-      body: JSON.stringify({ scope, weekStart }),
+      headers: { "Idempotency-Key": idempotencyKey },
+      body: JSON.stringify(input),
     });
   }
 
-  confirmWeekly(reportId: string): Promise<WeeklyReport> {
-    return this.request(`/weekly-reports/${reportId}/confirm`, { method: "POST" });
+  updateDailyReport(
+    reportId: string,
+    teamId: string,
+    input: DailyReportUpdate,
+    idempotencyKey = createIdempotencyKey("daily-edit"),
+  ): Promise<DailyReport> {
+    return this.request(
+      `/daily-reports/${encodeURIComponent(reportId)}?${queryString({ teamId })}`,
+      {
+        method: "PUT",
+        headers: { "Idempotency-Key": idempotencyKey },
+        body: JSON.stringify(input),
+      },
+    );
+  }
+
+  listDailyHistory(filters: DailyHistoryFilters): Promise<readonly DailyReport[]> {
+    return this.request(`/daily-reports/history?${queryString({
+      teamId: filters.teamId,
+      dateFrom: filters.dateFrom,
+      dateTo: filters.dateTo,
+      projectId: filters.projectId,
+      status: filters.status,
+    })}`);
+  }
+
+  getOverview(teamId: string, reportingDate: string): Promise<TeamOverview> {
+    return this.request(
+      `/teams/${encodeURIComponent(teamId)}/overview?${queryString({ reportingDate })}`,
+    );
+  }
+
+  generateWeekly(
+    input: WeeklyGenerateRequest,
+    idempotencyKey = createIdempotencyKey("weekly"),
+  ): Promise<WeeklyReport> {
+    return this.request("/weekly-reports/generate", {
+      method: "POST",
+      headers: { "Idempotency-Key": idempotencyKey },
+      body: JSON.stringify(input),
+    });
+  }
+
+  getWeekly(reportId: string, teamId?: string): Promise<WeeklyReport> {
+    return this.request(
+      `/weekly-reports/${encodeURIComponent(reportId)}?${queryString({ teamId })}`,
+    );
+  }
+
+  updateWeekly(
+    reportId: string,
+    teamId: string | undefined,
+    contentJson: Record<string, unknown>,
+    idempotencyKey = createIdempotencyKey("weekly-edit"),
+  ): Promise<WeeklyReport> {
+    return this.request(
+      `/weekly-reports/${encodeURIComponent(reportId)}?${queryString({ teamId })}`,
+      {
+        method: "PUT",
+        headers: { "Idempotency-Key": idempotencyKey },
+        body: JSON.stringify({ contentJson }),
+      },
+    );
+  }
+
+  confirmWeekly(
+    reportId: string,
+    teamId?: string,
+    idempotencyKey = createIdempotencyKey("weekly-confirm"),
+  ): Promise<WeeklyReport> {
+    return this.request(
+      `/weekly-reports/${encodeURIComponent(reportId)}/confirm?${queryString({ teamId })}`,
+      { method: "POST", headers: { "Idempotency-Key": idempotencyKey } },
+    );
+  }
+
+  createWeeklyRevision(
+    reportId: string,
+    teamId?: string,
+    idempotencyKey = createIdempotencyKey("weekly-revision"),
+  ): Promise<WeeklyReport> {
+    return this.request(
+      `/weekly-reports/${encodeURIComponent(reportId)}/revisions?${queryString({ teamId })}`,
+      { method: "POST", headers: { "Idempotency-Key": idempotencyKey } },
+    );
+  }
+
+  publishWeekly(
+    reportId: string,
+    conversationId: string,
+    idempotencyKey = createIdempotencyKey("weekly-publish"),
+  ): Promise<Publication> {
+    return this.request(`/weekly-reports/${encodeURIComponent(reportId)}/publish`, {
+      method: "POST",
+      headers: { "Idempotency-Key": idempotencyKey },
+      body: JSON.stringify({ conversationId }),
+    });
   }
 
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -106,14 +187,29 @@ export class ProjectAssistantClient {
     else headers.set("X-Dev-User-ID", this.userId);
     const response = await fetch(`${this.baseUrl}${path}`, { ...init, headers });
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
+      const error = (await response.json().catch(() => ({}))) as ApiErrorBody;
       throw new ApiError(
         response.status,
         error.code ?? "REQUEST_FAILED",
         error.message ?? "Request failed. Try again.",
+        error.details,
         error.correlationId,
       );
     }
+    if (response.status === 204) return undefined as T;
     return response.json() as Promise<T>;
   }
+}
+
+function queryString(values: Record<string, string | undefined>): string {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(values)) {
+    if (value) query.set(key, value);
+  }
+  return query.toString();
+}
+
+function createIdempotencyKey(action: string): string {
+  const suffix = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+  return `web:${action}:${suffix}`;
 }

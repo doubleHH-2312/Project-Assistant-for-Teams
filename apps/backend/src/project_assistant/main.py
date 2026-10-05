@@ -4,13 +4,20 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
+from project_assistant.api.session import router as session_router
 from project_assistant.api.system import router as system_router
 from project_assistant.core.config import get_settings
 from project_assistant.core.database import SessionFactory, create_schema
-from project_assistant.core.errors import AppError, app_error_handler
+from project_assistant.core.errors import (
+    AppError,
+    app_error_handler,
+    request_validation_error_handler,
+)
 from project_assistant.modules.daily_reports.router import router as daily_report_router
+from project_assistant.modules.publications.router import router as publication_router
 from project_assistant.modules.teams.router import router as team_router
 from project_assistant.modules.weekly_reports.router import router as weekly_report_router
 
@@ -52,10 +59,15 @@ def create_app() -> FastAPI:
         return response
 
     app.add_exception_handler(AppError, app_error_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(
+        RequestValidationError, request_validation_error_handler  # type: ignore[arg-type]
+    )
     app.include_router(system_router)
+    app.include_router(session_router, prefix=settings.api_prefix)
     app.include_router(daily_report_router, prefix=settings.api_prefix)
     app.include_router(team_router, prefix=settings.api_prefix)
     app.include_router(weekly_report_router, prefix=settings.api_prefix)
+    app.include_router(publication_router, prefix=settings.api_prefix)
     if settings.teams_transport == "sdk":
         from project_assistant.integrations.teams.app import create_teams_app
         from project_assistant.integrations.teams.runtime import (

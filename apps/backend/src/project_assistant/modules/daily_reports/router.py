@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Request, status
@@ -8,8 +9,10 @@ from project_assistant.core.database import get_session
 from project_assistant.modules.audit.models import RequestAuditContext
 from project_assistant.modules.audit.repository import SqlAlchemyAuditRepository
 from project_assistant.modules.audit.service import AuditService
+from project_assistant.modules.daily_reports.models import WorkStatus
 from project_assistant.modules.daily_reports.repository import SqlAlchemyDailyReportRepository
 from project_assistant.modules.daily_reports.schemas import (
+    DailyHistoryFilters,
     DailyReportCreate,
     DailyReportRead,
     DailyReportUpdate,
@@ -87,6 +90,40 @@ async def list_my_daily_reports(
 ) -> list[DailyReportRead]:
     reports = await service.list_for_user(actor, team_id)
     return [DailyReportRead.model_validate(report) for report in reports]
+
+
+@router.get("/history", response_model=list[DailyReportRead])
+async def list_daily_history(
+    actor: Annotated[User, Depends(get_current_user)],
+    service: Annotated[DailyReportService, Depends(get_daily_report_service)],
+    team_id: Annotated[str, Query(alias="teamId")],
+    date_from: Annotated[date | None, Query(alias="dateFrom")] = None,
+    date_to: Annotated[date | None, Query(alias="dateTo")] = None,
+    project_id: Annotated[str | None, Query(alias="projectId")] = None,
+    status_filter: Annotated[WorkStatus | None, Query(alias="status")] = None,
+) -> list[DailyReportRead]:
+    resolved_to = date_to or date.today()
+    resolved_from = date_from or resolved_to - timedelta(days=30)
+    reports = await service.list_history(
+        actor,
+        DailyHistoryFilters(
+            team_id=team_id,
+            project_id=project_id,
+            date_from=resolved_from,
+            date_to=resolved_to,
+            status=status_filter,
+        ),
+    )
+    return [DailyReportRead.model_validate(report) for report in reports]
+
+
+@router.get("/options")
+async def get_daily_options(
+    actor: Annotated[User, Depends(get_current_user)],
+    service: Annotated[DailyReportService, Depends(get_daily_report_service)],
+    team_id: Annotated[str, Query(alias="teamId")],
+) -> dict[str, list[dict[str, str]]]:
+    return await service.get_form_options(actor, team_id)
 
 
 def _audit_context(

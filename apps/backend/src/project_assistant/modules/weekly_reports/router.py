@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Header, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from project_assistant.core.auth import get_authorization_service, get_current_user
@@ -41,7 +41,11 @@ async def generate_weekly_report(
     request: WeeklyGenerateRequest,
     actor: Annotated[User, Depends(get_current_user)],
     service: Annotated[WeeklyReportService, Depends(get_weekly_report_service)],
+    idempotency_key: Annotated[
+        str | None, Header(alias="Idempotency-Key", max_length=256)
+    ] = None,
 ) -> WeeklyReportRead:
+    del idempotency_key
     return WeeklyReportRead.model_validate(await service.generate(actor, request))
 
 
@@ -50,7 +54,7 @@ async def get_weekly_report(
     report_id: str,
     actor: Annotated[User, Depends(get_current_user)],
     service: Annotated[WeeklyReportService, Depends(get_weekly_report_service)],
-    team_id: Annotated[str, Query(alias="teamId")],
+    team_id: Annotated[str | None, Query(alias="teamId")] = None,
 ) -> WeeklyReportRead:
     return WeeklyReportRead.model_validate(await service.get(actor, team_id, report_id))
 
@@ -61,8 +65,12 @@ async def update_weekly_report(
     request: WeeklyUpdateRequest,
     actor: Annotated[User, Depends(get_current_user)],
     service: Annotated[WeeklyReportService, Depends(get_weekly_report_service)],
-    team_id: Annotated[str, Query(alias="teamId")],
+    team_id: Annotated[str | None, Query(alias="teamId")] = None,
+    idempotency_key: Annotated[
+        str | None, Header(alias="Idempotency-Key", max_length=256)
+    ] = None,
 ) -> WeeklyReportRead:
+    del idempotency_key
     return WeeklyReportRead.model_validate(
         await service.update(actor, team_id, report_id, request)
     )
@@ -73,8 +81,12 @@ async def confirm_weekly_report(
     report_id: str,
     actor: Annotated[User, Depends(get_current_user)],
     service: Annotated[WeeklyReportService, Depends(get_weekly_report_service)],
-    team_id: Annotated[str, Query(alias="teamId")],
+    team_id: Annotated[str | None, Query(alias="teamId")] = None,
+    idempotency_key: Annotated[
+        str | None, Header(alias="Idempotency-Key", max_length=256)
+    ] = None,
 ) -> WeeklyReportRead:
+    del idempotency_key
     return WeeklyReportRead.model_validate(
         await service.confirm_by_id(actor, team_id, report_id)
     )
@@ -89,8 +101,12 @@ async def create_weekly_revision(
     report_id: str,
     actor: Annotated[User, Depends(get_current_user)],
     service: Annotated[WeeklyReportService, Depends(get_weekly_report_service)],
-    team_id: Annotated[str, Query(alias="teamId")],
+    team_id: Annotated[str | None, Query(alias="teamId")] = None,
+    idempotency_key: Annotated[
+        str | None, Header(alias="Idempotency-Key", max_length=256)
+    ] = None,
 ) -> WeeklyReportRead:
+    del idempotency_key
     return WeeklyReportRead.model_validate(
         await service.create_revision(actor, team_id, report_id)
     )

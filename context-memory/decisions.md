@@ -178,3 +178,14 @@ Append new decisions. Do not rewrite existing records; add a superseding record.
 - Impact: Migration `0007` persists conversation installations/bindings. SDK
   unauthenticated mode is limited to local/test; staging/production require bot
   credentials and tenant configuration. Real tenant delivery remains an explicit gate.
+
+## 2026-10-05 — D-020 Server-owned web authorization and generated contracts
+
+- Decision: The web application renders navigation from the active Team membership's
+  server-returned permissions. Multi-Team reporting is the only view authorized across
+  a selected set of eligible memberships. OpenAPI is exported deterministically and
+  generated TypeScript schema drift is checked in CI.
+- Reason: A user can hold different roles in different Teams, so a union of permissions
+  must not expose Team-local actions in the wrong Team context.
+- Impact: The SPA never hard-codes role grants and uses the generated client boundary;
+  backend authorization remains authoritative for every request.
