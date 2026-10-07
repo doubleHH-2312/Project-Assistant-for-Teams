@@ -125,7 +125,7 @@ async def get_current_user(
         # 4. Auto-link first unlinked seed user if present
         if user is None:
             first_user = await session.scalar(
-                select(User).where(User.active.is_(True)).order_by(User.created_at)
+                select(User).where(User.active.is_(True)).order_by(User.id)
             )
             if first_user and (
                 first_user.external_user_id.startswith("entra-")
