@@ -24,7 +24,14 @@ class EntraTokenVerifier:
 
     def verify(self, token: str) -> dict[str, Any]:
         signing_key = self.jwks_client.get_signing_key_from_jwt(token)
-        issuer = f"https://login.microsoftonline.com/{self.settings.entra_tenant_id}/v2.0"
+        unverified_claims = jwt.decode(token, options={"verify_signature": False})
+        tid = unverified_claims.get("tid")
+
+        if self.settings.entra_tenant_id == "common":
+            issuer = f"https://login.microsoftonline.com/{tid}/v2.0"
+        else:
+            issuer = f"https://login.microsoftonline.com/{self.settings.entra_tenant_id}/v2.0"
+
         claims: dict[str, Any] = jwt.decode(
             token,
             signing_key.key,
@@ -56,7 +63,9 @@ async def get_current_user(
             raise AppError(401, "TOKEN_INVALID", "Access token is invalid") from error
         object_id = claims.get("oid")
         tenant_id = claims.get("tid")
-        if not object_id or tenant_id != settings.entra_tenant_id:
+        if not object_id:
+            raise AppError(401, "TOKEN_INVALID", "Access token identity is invalid")
+        if settings.entra_tenant_id != "common" and tenant_id != settings.entra_tenant_id:
             raise AppError(401, "TOKEN_INVALID", "Access token identity is invalid")
         user = await session.scalar(
             select(User).where(

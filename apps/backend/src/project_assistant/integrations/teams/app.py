@@ -95,7 +95,7 @@ def create_teams_app(
         options["client_id"] = settings.teams_app_id
     if settings.teams_app_password:
         options["client_secret"] = settings.teams_app_password.get_secret_value()
-    if settings.entra_tenant_id:
+    if settings.entra_tenant_id and settings.entra_tenant_id != "common":
         options["tenant_id"] = settings.entra_tenant_id
     teams_app = App(**options)
     processor = TeamsMessageProcessor(dispatcher, context_resolver)
