@@ -12,6 +12,7 @@ from project_assistant.core.database import get_session
 from project_assistant.core.errors import AppError
 from project_assistant.modules.memberships.repository import SqlAlchemyMembershipRepository
 from project_assistant.modules.memberships.service import AuthorizationService
+from project_assistant.modules.teams.models import Team
 from project_assistant.modules.users.models import User
 
 
