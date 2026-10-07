@@ -57,9 +57,7 @@ class HistoryActionHandler:
         self.service = service
         self.clock = clock or (lambda: datetime.now(UTC))
 
-    async def execute(
-        self, context: ActionContext, payload: BaseModel
-    ) -> ActionResult:
+    async def execute(self, context: ActionContext, payload: BaseModel) -> ActionResult:
         if not isinstance(payload, HistoryActionInput):
             raise TypeError("HistoryActionHandler requires HistoryActionInput")
         team_id = context.current_team_id or payload.team_id
@@ -69,9 +67,7 @@ class HistoryActionHandler:
                 message="Select a Team to view history.",
                 data={"action": "history"},
             )
-        date_to = payload.date_to or self.clock().astimezone(
-            ZoneInfo(context.timezone)
-        ).date()
+        date_to = payload.date_to or self.clock().astimezone(ZoneInfo(context.timezone)).date()
         date_from = payload.date_from or first_of_reporting_days(date_to, 7)
         if date_from > date_to:
             raise AppError(422, "HISTORY_DATE_RANGE_INVALID", "Date range is invalid")
@@ -106,9 +102,9 @@ def first_of_reporting_days(last_date: date, count: int) -> date:
 def group_history(reports: list[DailyReport]) -> list[dict[str, Any]]:
     grouped: dict[date, dict[str, dict[str, list[DailyReport]]]] = {}
     for report in reports:
-        grouped.setdefault(report.report_date, {}).setdefault(
-            report.project_id, {}
-        ).setdefault(report.work_item_id, []).append(report)
+        grouped.setdefault(report.report_date, {}).setdefault(report.project_id, {}).setdefault(
+            report.work_item_id, []
+        ).append(report)
     dates: list[dict[str, Any]] = []
     for report_date in sorted(grouped, reverse=True):
         projects: list[dict[str, Any]] = []

@@ -1,2 +1,1 @@
 """Versioned reporting templates."""
-

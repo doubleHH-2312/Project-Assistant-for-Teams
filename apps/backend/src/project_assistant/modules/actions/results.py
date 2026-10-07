@@ -22,9 +22,7 @@ class ActionResultRecord(Base):
     result_ref: Mapped[str | None] = mapped_column(String(128), nullable=True)
     data_json: Mapped[dict[str, Any]] = mapped_column("data", JSON, default=dict)
     private: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     def to_result(self) -> ActionResult:
         return ActionResult(
@@ -39,9 +37,7 @@ class ActionResultRecord(Base):
 class ActionResultStore(Protocol):
     async def get(self, invocation_id: str) -> ActionResult | None: ...
 
-    async def save(
-        self, invocation_id: str, result: ActionResult
-    ) -> ActionResult: ...
+    async def save(self, invocation_id: str, result: ActionResult) -> ActionResult: ...
 
 
 class SqlAlchemyActionResultStore:

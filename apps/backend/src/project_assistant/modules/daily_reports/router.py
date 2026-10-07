@@ -145,9 +145,7 @@ def _audit_context(
         conversation_type="WEB",
         timezone="UTC",
         correlation_id=correlation_id,
-        idempotency_key=request.headers.get(
-            "Idempotency-Key", f"{correlation_id}:{action}"
-        ),
+        idempotency_key=request.headers.get("Idempotency-Key", f"{correlation_id}:{action}"),
         source="WEB",
         metadata={"method": request.method, "path": request.url.path},
     )

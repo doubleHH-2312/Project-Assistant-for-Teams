@@ -99,9 +99,7 @@ async def test_daily_summary_exposes_exact_blocker_event_date() -> None:
 async def test_help_lists_only_actions_allowed_by_inherited_permissions() -> None:
     registry = ActionRegistry()
     registry.register(DefinitionOnlyHandler("daily", Permission.SUBMIT_OWN_DAILY))
-    registry.register(
-        DefinitionOnlyHandler("daily-summary", Permission.VIEW_TEAM_DAILY_SUMMARY)
-    )
+    registry.register(DefinitionOnlyHandler("daily-summary", Permission.VIEW_TEAM_DAILY_SUMMARY))
     help_handler = HelpActionHandler(
         registry,
         FakeHelpAuthorization({Permission.SUBMIT_OWN_DAILY}),  # type: ignore[arg-type]

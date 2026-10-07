@@ -25,9 +25,7 @@ class FakeNotificationRepository:
     async def list_expected_reporters(self, team_id: str) -> list[User]:
         return self.users
 
-    async def has_daily_report(
-        self, user_id: str, team_id: str, target_date: date
-    ) -> bool:
+    async def has_daily_report(self, user_id: str, team_id: str, target_date: date) -> bool:
         del team_id, target_date
         return user_id in self.reported
 

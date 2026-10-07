@@ -41,9 +41,7 @@ async def generate_weekly_report(
     request: WeeklyGenerateRequest,
     actor: Annotated[User, Depends(get_current_user)],
     service: Annotated[WeeklyReportService, Depends(get_weekly_report_service)],
-    idempotency_key: Annotated[
-        str | None, Header(alias="Idempotency-Key", max_length=256)
-    ] = None,
+    idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key", max_length=256)] = None,
 ) -> WeeklyReportRead:
     del idempotency_key
     return WeeklyReportRead.model_validate(await service.generate(actor, request))
@@ -66,14 +64,10 @@ async def update_weekly_report(
     actor: Annotated[User, Depends(get_current_user)],
     service: Annotated[WeeklyReportService, Depends(get_weekly_report_service)],
     team_id: Annotated[str | None, Query(alias="teamId")] = None,
-    idempotency_key: Annotated[
-        str | None, Header(alias="Idempotency-Key", max_length=256)
-    ] = None,
+    idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key", max_length=256)] = None,
 ) -> WeeklyReportRead:
     del idempotency_key
-    return WeeklyReportRead.model_validate(
-        await service.update(actor, team_id, report_id, request)
-    )
+    return WeeklyReportRead.model_validate(await service.update(actor, team_id, report_id, request))
 
 
 @router.post("/weekly-reports/{report_id}/confirm", response_model=WeeklyReportRead)
@@ -82,14 +76,10 @@ async def confirm_weekly_report(
     actor: Annotated[User, Depends(get_current_user)],
     service: Annotated[WeeklyReportService, Depends(get_weekly_report_service)],
     team_id: Annotated[str | None, Query(alias="teamId")] = None,
-    idempotency_key: Annotated[
-        str | None, Header(alias="Idempotency-Key", max_length=256)
-    ] = None,
+    idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key", max_length=256)] = None,
 ) -> WeeklyReportRead:
     del idempotency_key
-    return WeeklyReportRead.model_validate(
-        await service.confirm_by_id(actor, team_id, report_id)
-    )
+    return WeeklyReportRead.model_validate(await service.confirm_by_id(actor, team_id, report_id))
 
 
 @router.post(
@@ -102,14 +92,10 @@ async def create_weekly_revision(
     actor: Annotated[User, Depends(get_current_user)],
     service: Annotated[WeeklyReportService, Depends(get_weekly_report_service)],
     team_id: Annotated[str | None, Query(alias="teamId")] = None,
-    idempotency_key: Annotated[
-        str | None, Header(alias="Idempotency-Key", max_length=256)
-    ] = None,
+    idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key", max_length=256)] = None,
 ) -> WeeklyReportRead:
     del idempotency_key
-    return WeeklyReportRead.model_validate(
-        await service.create_revision(actor, team_id, report_id)
-    )
+    return WeeklyReportRead.model_validate(await service.create_revision(actor, team_id, report_id))
 
 
 @router.get("/teams/{team_id}/templates/active")

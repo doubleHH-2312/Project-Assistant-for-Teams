@@ -28,9 +28,7 @@ class SqlAlchemyNotificationRepository:
         )
         return list(result)
 
-    async def has_daily_report(
-        self, user_id: str, team_id: str, target_date: date
-    ) -> bool:
+    async def has_daily_report(self, user_id: str, team_id: str, target_date: date) -> bool:
         report_id = await self.session.scalar(
             select(DailyReport.id)
             .join(Project, Project.id == DailyReport.project_id)

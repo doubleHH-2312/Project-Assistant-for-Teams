@@ -50,9 +50,7 @@ class _SingleTeamWeeklyActionHandler:
     def __init__(self, service: WeeklyGenerationService) -> None:
         self.service = service
 
-    async def execute(
-        self, context: ActionContext, payload: BaseModel
-    ) -> ActionResult:
+    async def execute(self, context: ActionContext, payload: BaseModel) -> ActionResult:
         if not isinstance(payload, WeeklyActionInput):
             raise TypeError("Weekly action requires WeeklyActionInput")
         team_id = context.current_team_id or payload.team_id
@@ -115,9 +113,7 @@ class MultiTeamWeeklyActionHandler:
     def __init__(self, service: WeeklyGenerationService) -> None:
         self.service = service
 
-    async def execute(
-        self, context: ActionContext, payload: BaseModel
-    ) -> ActionResult:
+    async def execute(self, context: ActionContext, payload: BaseModel) -> ActionResult:
         if not isinstance(payload, MultiTeamWeeklyActionInput):
             raise TypeError("Multi-team weekly action requires MultiTeamWeeklyActionInput")
         team_ids = sorted(set(payload.team_ids))

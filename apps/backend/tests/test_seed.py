@@ -53,14 +53,8 @@ def test_seed_is_idempotent_and_contains_demo_scenarios() -> None:
         )
         report_count = session.scalar(select(func.count()).select_from(DailyReport))
         assert report_count is not None
-        assert (
-            session.scalar(select(func.count()).select_from(ActionInvocation))
-            == report_count
-        )
-        assert (
-            session.scalar(select(func.count()).select_from(WorkItemStatusEvent))
-            == report_count
-        )
+        assert session.scalar(select(func.count()).select_from(ActionInvocation)) == report_count
+        assert session.scalar(select(func.count()).select_from(WorkItemStatusEvent)) == report_count
         assert (
             session.scalar(
                 select(func.count())
@@ -97,14 +91,8 @@ def test_seed_is_idempotent_and_contains_demo_scenarios() -> None:
             )
             == 1
         )
-        assert (
-            session.scalar(select(func.count()).select_from(WeeklyReportTeam))
-            >= 2
-        )
-        assert (
-            session.scalar(select(func.count()).select_from(ReportEvidenceLink))
-            >= 2
-        )
+        assert session.scalar(select(func.count()).select_from(WeeklyReportTeam)) >= 2
+        assert session.scalar(select(func.count()).select_from(ReportEvidenceLink)) >= 2
         membership_rows = session.execute(
             select(
                 func.count(),

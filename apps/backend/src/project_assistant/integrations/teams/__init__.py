@@ -1,2 +1,1 @@
 """Microsoft Teams integration seam."""
-

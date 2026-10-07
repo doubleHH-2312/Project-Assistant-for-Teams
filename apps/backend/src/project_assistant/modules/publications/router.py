@@ -54,7 +54,5 @@ async def publish_weekly_report(
         Header(alias="Idempotency-Key", min_length=1, max_length=256),
     ],
 ) -> PublicationRead:
-    publication = await service.publish(
-        actor, report_id, request.conversation_id, idempotency_key
-    )
+    publication = await service.publish(actor, report_id, request.conversation_id, idempotency_key)
     return PublicationRead.model_validate(publication)

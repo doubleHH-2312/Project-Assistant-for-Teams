@@ -40,9 +40,7 @@ class WeeklyReportRepository(Protocol):
         self, tenant_id: str, scope: ReportScope
     ) -> ReportTemplate | None: ...
 
-    async def list_team_ids_in_tenant(
-        self, team_ids: list[str], tenant_id: str
-    ) -> list[str]: ...
+    async def list_team_ids_in_tenant(self, team_ids: list[str], tenant_id: str) -> list[str]: ...
 
     async def get_template(
         self, template_id: str, team_id: str | None
@@ -91,9 +89,7 @@ class WeeklyReportRepository(Protocol):
         self, report: WeeklyReport, team_ids: list[str], supersedes_id: str
     ) -> WeeklyReport: ...
 
-    async def get_by_id(
-        self, report_id: str, team_id: str | None
-    ) -> WeeklyReport | None: ...
+    async def get_by_id(self, report_id: str, team_id: str | None) -> WeeklyReport | None: ...
 
     async def list_report_team_ids(self, report_id: str) -> list[str]: ...
 
@@ -117,9 +113,7 @@ class WeeklyReportService:
         self.provider = provider
         self.authorization = authorization
 
-    async def generate(
-        self, actor: WeeklyActor, request: WeeklyGenerateRequest
-    ) -> WeeklyReport:
+    async def generate(self, actor: WeeklyActor, request: WeeklyGenerateRequest) -> WeeklyReport:
         if request.week_start.weekday() != 0:
             raise AppError(422, "WEEK_START_INVALID", "Week start must be a Monday")
         if request.scope == ReportScope.MULTI_TEAM:
@@ -155,9 +149,7 @@ class WeeklyReportService:
         )
         if existing is not None:
             return self._existing_or_revision_required(existing)
-        template = await self.repository.get_active_template(
-            request.team_id, request.scope
-        )
+        template = await self.repository.get_active_template(request.team_id, request.scope)
         if template is None:
             raise AppError(422, "TEMPLATE_NOT_FOUND", "No active template exists for this scope")
         missing: list[str] = []
@@ -177,9 +169,7 @@ class WeeklyReportService:
             bundle = build_team_evidence(member_reports)
             confirmed_ids = {report.subject_user_id for report in member_reports}
             expected_ids = await self.repository.list_expected_member_ids(request.team_id)
-            missing = sorted(
-                user_id for user_id in expected_ids if user_id not in confirmed_ids
-            )
+            missing = sorted(user_id for user_id in expected_ids if user_id not in confirmed_ids)
         return await self._generate_and_save(
             actor=actor,
             scope=request.scope,
@@ -197,14 +187,10 @@ class WeeklyReportService:
         self, actor: WeeklyActor, request: WeeklyGenerateRequest
     ) -> WeeklyReport:
         team_ids = sorted(set(request.team_ids))
-        visible_team_ids = await self.repository.list_team_ids_in_tenant(
-            team_ids, actor.tenant_id
-        )
+        visible_team_ids = await self.repository.list_team_ids_in_tenant(team_ids, actor.tenant_id)
         if visible_team_ids != team_ids:
             raise AppError(404, "TEAM_NOT_FOUND", "Team was not found")
-        await self.authorization.require(
-            actor.id, team_ids, Permission.GENERATE_MULTI_TEAM_WEEKLY
-        )
+        await self.authorization.require(actor.id, team_ids, Permission.GENERATE_MULTI_TEAM_WEEKLY)
         existing = await self.repository.find_multiteam_report(
             actor.tenant_id, team_ids, request.week_start
         )
@@ -295,9 +281,7 @@ class WeeklyReportService:
         report.confirmed_at = datetime.now(UTC)
         return await self.repository.save(report)
 
-    async def get(
-        self, actor: WeeklyActor, team_id: str | None, report_id: str
-    ) -> WeeklyReport:
+    async def get(self, actor: WeeklyActor, team_id: str | None, report_id: str) -> WeeklyReport:
         return await self._get_authorized(actor, team_id, report_id)
 
     async def confirm_by_id(
@@ -314,9 +298,7 @@ class WeeklyReportService:
     ) -> WeeklyReport:
         report = await self._get_authorized(actor, team_id, report_id)
         if report.status == WeeklyReportStatus.CONFIRMED:
-            raise AppError(
-                409, "WEEKLY_REPORT_IMMUTABLE", "Confirmed reports cannot be edited"
-            )
+            raise AppError(409, "WEEKLY_REPORT_IMMUTABLE", "Confirmed reports cannot be edited")
         template = await self.repository.get_template(report.template_id, report.team_id)
         if template is None:
             raise AppError(422, "TEMPLATE_NOT_FOUND", "The report template was not found")
@@ -367,9 +349,7 @@ class WeeklyReportService:
         await self._authorize_editor(actor, report)
         return report
 
-    async def _authorize_editor(
-        self, actor: WeeklyActor, report: WeeklyReport
-    ) -> None:
+    async def _authorize_editor(self, actor: WeeklyActor, report: WeeklyReport) -> None:
         if report.scope == ReportScope.MEMBER and report.subject_user_id != actor.id:
             raise AppError(403, "FORBIDDEN", "Only the subject member can edit this report")
         if report.scope == ReportScope.MULTI_TEAM:
@@ -425,11 +405,7 @@ class WeeklyReportService:
                 allowed_project_ids=project_ids,
             )
         except (ValidationError, ValueError) as error:
-            path = (
-                [str(part) for part in error.path]
-                if isinstance(error, ValidationError)
-                else []
-            )
+            path = [str(part) for part in error.path] if isinstance(error, ValidationError) else []
             raise AppError(
                 status_code,
                 code,

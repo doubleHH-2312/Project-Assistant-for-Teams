@@ -110,9 +110,7 @@ class StubHandler:
         self.error = error
         self.calls = 0
 
-    async def execute(
-        self, context: ActionContext, payload: BaseModel
-    ) -> ActionResult:
+    async def execute(self, context: ActionContext, payload: BaseModel) -> ActionResult:
         self.calls += 1
         if self.error is not None:
             raise self.error
@@ -215,9 +213,7 @@ async def test_context_and_payload_failures_are_audited(
 @pytest.mark.asyncio
 async def test_permission_denial_is_recorded_without_running_handler() -> None:
     handler = StubHandler()
-    authorization = FakeAuthorization(
-        AppError(403, "FORBIDDEN", "This action is not permitted")
-    )
+    authorization = FakeAuthorization(AppError(403, "FORBIDDEN", "This action is not permitted"))
     dispatcher, audit_repository, _, _, _ = make_dispatcher(handler, authorization)
 
     with pytest.raises(AppError) as denied:
@@ -254,9 +250,7 @@ async def test_personal_action_without_team_returns_permitted_team_selection() -
 @pytest.mark.asyncio
 async def test_successful_replay_returns_same_result_and_executes_once() -> None:
     handler = StubHandler()
-    dispatcher, audit_repository, authorization, result_store, registry = make_dispatcher(
-        handler
-    )
+    dispatcher, audit_repository, authorization, result_store, registry = make_dispatcher(handler)
     command = ParsedCommand(name="report-daily", arguments=())
     context = action_context()
     payload = {"teamId": "team-1", "summary": "Worked on the API"}

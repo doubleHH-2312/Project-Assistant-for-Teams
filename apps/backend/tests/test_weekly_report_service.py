@@ -60,9 +60,7 @@ class FakeWeeklyRepository:
     async def list_team_ids_in_tenant(self, team_ids, tenant_id):  # type: ignore[no-untyped-def]
         return sorted(team_id for team_id in team_ids if team_id in self.tenant_team_ids)
 
-    async def get_active_template(
-        self, team_id: str, scope: ReportScope
-    ) -> ReportTemplate | None:
+    async def get_active_template(self, team_id: str, scope: ReportScope) -> ReportTemplate | None:
         return self.templates.get(scope)
 
     async def get_template(self, template_id: str, team_id: str) -> ReportTemplate | None:
@@ -184,7 +182,9 @@ async def test_member_generation_uses_daily_evidence_and_preserves_ids() -> None
         )
     )
     service = WeeklyReportService(
-        repository, MockLLMProvider(), AllowAuthorization()  # type: ignore[arg-type]
+        repository,
+        MockLLMProvider(),
+        AllowAuthorization(),  # type: ignore[arg-type]
     )
 
     report = await service.generate(
@@ -242,14 +242,14 @@ async def test_team_generation_uses_only_confirmed_member_reports_and_lists_miss
         ]
     )
     service = WeeklyReportService(
-        repository, MockLLMProvider(), AllowAuthorization()  # type: ignore[arg-type]
+        repository,
+        MockLLMProvider(),
+        AllowAuthorization(),  # type: ignore[arg-type]
     )
 
     report = await service.generate(
         user("user-lead"),
-        WeeklyGenerateRequest(
-            teamId="team-1", scope=ReportScope.TEAM, weekStart=date(2026, 9, 28)
-        ),
+        WeeklyGenerateRequest(teamId="team-1", scope=ReportScope.TEAM, weekStart=date(2026, 9, 28)),
     )
 
     assert report.input_record_ids == ["member-confirmed"]
@@ -272,7 +272,9 @@ class UnavailableProvider:
 async def test_invalid_llm_output_is_rejected_without_persistence() -> None:
     repository = FakeWeeklyRepository()
     service = WeeklyReportService(
-        repository, InvalidProvider(), AllowAuthorization()  # type: ignore[arg-type]
+        repository,
+        InvalidProvider(),
+        AllowAuthorization(),  # type: ignore[arg-type]
     )
 
     with pytest.raises(AppError) as invalid:
@@ -293,7 +295,9 @@ async def test_invalid_llm_output_is_rejected_without_persistence() -> None:
 async def test_provider_failure_is_sanitized_without_persistence() -> None:
     repository = FakeWeeklyRepository()
     service = WeeklyReportService(
-        repository, UnavailableProvider(), AllowAuthorization()  # type: ignore[arg-type]
+        repository,
+        UnavailableProvider(),
+        AllowAuthorization(),  # type: ignore[arg-type]
     )
 
     with pytest.raises(AppError) as unavailable:
@@ -317,7 +321,9 @@ async def test_single_team_generation_hides_team_outside_actor_tenant() -> None:
     repository = FakeWeeklyRepository()
     repository.tenant_team_ids.clear()
     service = WeeklyReportService(
-        repository, MockLLMProvider(), AllowAuthorization()  # type: ignore[arg-type]
+        repository,
+        MockLLMProvider(),
+        AllowAuthorization(),  # type: ignore[arg-type]
     )
 
     with pytest.raises(AppError) as hidden:
@@ -357,7 +363,9 @@ async def test_confirmed_report_is_immutable_and_revision_supersedes_it() -> Non
     )
     repository.saved.append(confirmed)
     service = WeeklyReportService(
-        repository, MockLLMProvider(), AllowAuthorization()  # type: ignore[arg-type]
+        repository,
+        MockLLMProvider(),
+        AllowAuthorization(),  # type: ignore[arg-type]
     )
 
     with pytest.raises(AppError) as immutable:

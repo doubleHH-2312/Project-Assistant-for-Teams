@@ -30,9 +30,7 @@ def success_response(request: httpx.Request) -> httpx.Response:
                 {
                     "message": {
                         "role": "assistant",
-                        "content": json.dumps(
-                            {"completed": ["Implemented API", "Reviewed UI"]}
-                        ),
+                        "content": json.dumps({"completed": ["Implemented API", "Reviewed UI"]}),
                     }
                 }
             ],

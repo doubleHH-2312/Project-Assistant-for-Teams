@@ -43,10 +43,7 @@ async def request_validation_error_handler(
     request: Request, error: RequestValidationError
 ) -> JSONResponse:
     correlation_id = getattr(request.state, "correlation_id", "unknown")
-    fields = [
-        ".".join(str(part) for part in item["loc"])
-        for item in error.errors()
-    ]
+    fields = [".".join(str(part) for part in item["loc"]) for item in error.errors()]
     body = ErrorBody(
         code="REQUEST_VALIDATION_FAILED",
         message="The request is invalid",

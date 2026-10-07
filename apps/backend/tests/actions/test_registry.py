@@ -25,9 +25,7 @@ class StubHandler:
             input_schema=EmptyInput,
         )
 
-    async def execute(
-        self, context: ActionContext, payload: BaseModel
-    ) -> ActionResult:
+    async def execute(self, context: ActionContext, payload: BaseModel) -> ActionResult:
         del context, payload
         return ActionResult(kind="message", message="ok")
 

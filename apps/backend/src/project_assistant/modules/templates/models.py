@@ -20,9 +20,7 @@ class ReportTemplate(Base):
     __tablename__ = "report_templates"
     __table_args__ = (
         UniqueConstraint("team_id", "name", "version", name="uq_template_team_name_version"),
-        UniqueConstraint(
-            "tenant_id", "name", "version", name="uq_template_tenant_name_version"
-        ),
+        UniqueConstraint("tenant_id", "name", "version", name="uq_template_tenant_name_version"),
         CheckConstraint(
             "(scope = 'MULTI_TEAM' AND tenant_id IS NOT NULL AND team_id IS NULL) OR "
             "(scope != 'MULTI_TEAM' AND team_id IS NOT NULL)",
@@ -31,9 +29,7 @@ class ReportTemplate(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    team_id: Mapped[str | None] = mapped_column(
-        ForeignKey("teams.id"), nullable=True, index=True
-    )
+    team_id: Mapped[str | None] = mapped_column(ForeignKey("teams.id"), nullable=True, index=True)
     tenant_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(160))
     scope: Mapped[ReportScope] = mapped_column(

@@ -30,9 +30,7 @@ class DailyActionInput(BaseModel):
         default=None, alias="workSummary", min_length=1, max_length=4000
     )
     blocker: str | None = Field(default=None, max_length=4000)
-    next_action: str | None = Field(
-        default=None, alias="nextAction", min_length=1, max_length=2000
-    )
+    next_action: str | None = Field(default=None, alias="nextAction", min_length=1, max_length=2000)
 
 
 @dataclass(frozen=True)
@@ -66,9 +64,7 @@ class DailyActionHandler:
     def __init__(self, service: DailySubmitService) -> None:
         self.service = service
 
-    async def execute(
-        self, context: ActionContext, payload: BaseModel
-    ) -> ActionResult:
+    async def execute(self, context: ActionContext, payload: BaseModel) -> ActionResult:
         if not isinstance(payload, DailyActionInput):
             raise TypeError("DailyActionHandler requires DailyActionInput")
         team_id = context.current_team_id or payload.team_id

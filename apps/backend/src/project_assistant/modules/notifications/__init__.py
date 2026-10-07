@@ -1,2 +1,1 @@
 """Reminder and notification domain."""
-

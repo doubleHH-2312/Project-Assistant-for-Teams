@@ -29,15 +29,11 @@ class HelpActionHandler:
         input_schema=HelpActionInput,
     )
 
-    def __init__(
-        self, registry: ActionRegistry, authorization: HelpAuthorization
-    ) -> None:
+    def __init__(self, registry: ActionRegistry, authorization: HelpAuthorization) -> None:
         self.registry = registry
         self.authorization = authorization
 
-    async def execute(
-        self, context: ActionContext, payload: BaseModel
-    ) -> ActionResult:
+    async def execute(self, context: ActionContext, payload: BaseModel) -> ActionResult:
         if not isinstance(payload, HelpActionInput):
             raise TypeError("HelpActionHandler requires HelpActionInput")
         permissions = await self.authorization.list_permissions(context.actor_id)

@@ -56,9 +56,7 @@ def context(current_team_id: str | None) -> ActionContext:
         tenant_id="tenant-1",
         conversation_id="conversation-1",
         conversation_type=(
-            ConversationType.TEAM_CHANNEL
-            if current_team_id
-            else ConversationType.PERSONAL
+            ConversationType.TEAM_CHANNEL if current_team_id else ConversationType.PERSONAL
         ),
         current_team_id=current_team_id,
         correlation_id="correlation-1",
@@ -102,9 +100,7 @@ async def test_daily_action_personal_chat_uses_selected_team_and_incomplete_inpu
     handler = DailyActionHandler(service)  # type: ignore[arg-type]
 
     selected = await handler.execute(context(None), complete_payload("team-2"))
-    form = await handler.execute(
-        context("team-1"), DailyActionInput(teamId=None)
-    )
+    form = await handler.execute(context("team-1"), DailyActionInput(teamId=None))
 
     assert selected.result_ref == "daily-1"
     assert service.calls[0][1] == "team-2"

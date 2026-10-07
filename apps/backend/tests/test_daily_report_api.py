@@ -12,7 +12,11 @@ from project_assistant.modules.users.models import User
 
 class StubDailyReportService:
     async def create(
-        self, actor: User, team_id, request, audit  # type: ignore[no-untyped-def]
+        self,
+        actor: User,
+        team_id,
+        request,
+        audit,  # type: ignore[no-untyped-def]
     ):  # type: ignore[no-untyped-def]
         del audit
         now = datetime(2026, 10, 1, 10, tzinfo=UTC)
@@ -42,6 +46,7 @@ async def test_create_daily_report_returns_camel_case_contract() -> None:
         name="Member",
         email="member@example.test",
     )
+
     async def override_actor() -> User:
         return actor
 

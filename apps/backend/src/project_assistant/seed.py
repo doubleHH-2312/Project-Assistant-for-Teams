@@ -596,9 +596,7 @@ def seed_database(session: Session, reference_date: date | None = None) -> None:
                     team_id=source_report.team_id,
                     project_id=source_report.project_id,
                     recorded_at=source_report.submitted_at
-                    or datetime.combine(
-                        source_report.report_date, time.min, tzinfo=UTC
-                    ),
+                    or datetime.combine(source_report.report_date, time.min, tzinfo=UTC),
                 )
             )
     session.add_all([*weekly_scope_rows, *weekly_evidence_rows])

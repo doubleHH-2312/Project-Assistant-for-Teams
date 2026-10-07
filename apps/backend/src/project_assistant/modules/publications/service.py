@@ -15,9 +15,7 @@ from project_assistant.modules.weekly_reports.models import (
 
 
 class PublicationRepository(Protocol):
-    async def find_by_idempotency_key(
-        self, key: str
-    ) -> ReportPublication | None: ...
+    async def find_by_idempotency_key(self, key: str) -> ReportPublication | None: ...
 
     async def get_report(self, report_id: str) -> WeeklyReport | None: ...
 

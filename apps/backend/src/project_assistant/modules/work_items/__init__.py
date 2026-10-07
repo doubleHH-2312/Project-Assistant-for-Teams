@@ -1,2 +1,1 @@
 """Work item domain."""
-

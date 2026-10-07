@@ -37,19 +37,13 @@ class RequestAuditContext:
 
 class ActionInvocation(Base):
     __tablename__ = "action_invocations"
-    __table_args__ = (
-        UniqueConstraint("idempotency_key", name="uq_action_invocation_idempotency"),
-    )
+    __table_args__ = (UniqueConstraint("idempotency_key", name="uq_action_invocation_idempotency"),)
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     action: Mapped[str] = mapped_column(String(100), index=True)
     actor_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
     tenant_id: Mapped[str] = mapped_column(String(128), index=True)
-    team_id: Mapped[str | None] = mapped_column(
-        ForeignKey("teams.id"), nullable=True, index=True
-    )
+    team_id: Mapped[str | None] = mapped_column(ForeignKey("teams.id"), nullable=True, index=True)
     project_id: Mapped[str | None] = mapped_column(
         ForeignKey("projects.id"), nullable=True, index=True
     )
@@ -68,25 +62,17 @@ class ActionInvocation(Base):
     error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
     result_ref: Mapped[str | None] = mapped_column(String(128), nullable=True)
     metadata_json: Mapped[dict[str, Any]] = mapped_column("metadata", JSON, default=dict)
-    completed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class WorkItemStatusEvent(Base):
     __tablename__ = "work_item_status_events"
     __table_args__ = (
-        UniqueConstraint(
-            "action_invocation_id", name="uq_status_event_action_invocation"
-        ),
+        UniqueConstraint("action_invocation_id", name="uq_status_event_action_invocation"),
     )
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
-    )
-    daily_report_id: Mapped[str] = mapped_column(
-        ForeignKey("daily_reports.id"), index=True
-    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    daily_report_id: Mapped[str] = mapped_column(ForeignKey("daily_reports.id"), index=True)
     action_invocation_id: Mapped[str] = mapped_column(
         ForeignKey("action_invocations.id"), index=True
     )

@@ -203,8 +203,7 @@ def validate_evidence_references(
                 if not isinstance(evidence_ids, list) or not evidence_ids:
                     raise ValueError("Every generated report item needs evidenceIds")
                 if any(
-                    not isinstance(source_id, str)
-                    or source_id not in allowed_source_ids
+                    not isinstance(source_id, str) or source_id not in allowed_source_ids
                     for source_id in evidence_ids
                 ):
                     raise ValueError("Generated report references unknown evidence")

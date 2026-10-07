@@ -64,9 +64,7 @@ class TeamOverviewService:
             user for user in await self.repository.list_expected_reporters(team_id) if user.active
         ]
         reports = await self.repository.list_reports_through(team_id, reporting_date, 90)
-        events = await self.repository.list_status_events_through(
-            team_id, reporting_date, 90
-        )
+        events = await self.repository.list_status_events_through(team_id, reporting_date, 90)
         current = [report for report in reports if report.report_date == reporting_date]
         submitted_ids = {report.user_id for report in current}
         missing = sorted(
@@ -94,10 +92,7 @@ class TeamOverviewService:
                 key=lambda event: (event.recorded_at, event.id),
             )
             latest_event = history[-1]
-            if (
-                latest_event.status != WorkStatus.BLOCKED
-                or not latest_event.effective_blocker
-            ):
+            if latest_event.status != WorkStatus.BLOCKED or not latest_event.effective_blocker:
                 continue
             matching_dates = [
                 event.local_date

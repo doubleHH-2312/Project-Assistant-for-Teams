@@ -200,14 +200,10 @@ async def test_repositories_never_cross_explicit_team_scope() -> None:
             "project-a"
         ]
         assert [item.id for item in await daily.list_work_items("team-a")] == ["item-a"]
-        assert [user.id for user in await overview.list_expected_reporters("team-a")] == [
-            "user-1"
-        ]
+        assert [user.id for user in await overview.list_expected_reporters("team-a")] == ["user-1"]
         assert [
             report.id
-            for report in await overview.list_reports_through(
-                "team-a", date(2026, 10, 2), 7
-            )
+            for report in await overview.list_reports_through("team-a", date(2026, 10, 2), 7)
         ] == ["daily-a"]
         assert [
             report.id
@@ -219,12 +215,8 @@ async def test_repositories_never_cross_explicit_team_scope() -> None:
         assert [user.id for user in await notification.list_expected_reporters("team-a")] == [
             "user-1"
         ]
-        assert await notification.has_daily_report(
-            "user-1", "team-a", date(2026, 10, 2)
-        )
-        assert not await notification.has_daily_report(
-            "user-1", "team-b", date(2026, 10, 1)
-        )
+        assert await notification.has_daily_report("user-1", "team-a", date(2026, 10, 2))
+        assert not await notification.has_daily_report("user-1", "team-b", date(2026, 10, 1))
     engine.dispose()
 
 
@@ -251,9 +243,7 @@ async def test_daily_repository_persists_report_before_its_status_event() -> Non
         session.flush()
         session.add(Project(id="project-a", team_id="team-a", name="Project A"))
         session.flush()
-        session.add(
-            WorkItem(id="item-a", project_id="project-a", code="A-1", title="Task A")
-        )
+        session.add(WorkItem(id="item-a", project_id="project-a", code="A-1", title="Task A"))
         session.commit()
         invocation = ActionInvocation(
             id="invocation-new-daily",
@@ -307,9 +297,7 @@ async def test_daily_repository_persists_report_before_its_status_event() -> Non
         repository = SqlAlchemyDailyReportRepository(  # type: ignore[arg-type]
             SyncBackedAsyncSession(session)
         )
-        saved = await repository.save_with_event_and_success(
-            report, status_event, invocation.id
-        )
+        saved = await repository.save_with_event_and_success(report, status_event, invocation.id)
 
         assert saved.id == "daily-new"
         assert session.get(WorkItemStatusEvent, status_event.id) is not None

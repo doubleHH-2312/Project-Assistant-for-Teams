@@ -56,8 +56,7 @@ class SqlAlchemyDailyReportRepository:
         self, user_id: str, work_item_id: str, report_date: date, team_id: str
     ) -> DailyReport | None:
         return await self.session.scalar(
-            select(DailyReport)
-            .where(
+            select(DailyReport).where(
                 DailyReport.user_id == user_id,
                 DailyReport.work_item_id == work_item_id,
                 DailyReport.report_date == report_date,
@@ -65,12 +64,9 @@ class SqlAlchemyDailyReportRepository:
             )
         )
 
-    async def get_by_id(
-        self, report_id: str, user_id: str, team_id: str
-    ) -> DailyReport | None:
+    async def get_by_id(self, report_id: str, user_id: str, team_id: str) -> DailyReport | None:
         return await self.session.scalar(
-            select(DailyReport)
-            .where(
+            select(DailyReport).where(
                 DailyReport.id == report_id,
                 DailyReport.user_id == user_id,
                 DailyReport.team_id == team_id,
@@ -113,9 +109,7 @@ class SqlAlchemyDailyReportRepository:
         )
         return list(reports)
 
-    async def get_latest_event(
-        self, daily_report_id: str
-    ) -> WorkItemStatusEvent | None:
+    async def get_latest_event(self, daily_report_id: str) -> WorkItemStatusEvent | None:
         return await self.session.scalar(
             select(WorkItemStatusEvent)
             .where(WorkItemStatusEvent.daily_report_id == daily_report_id)
@@ -142,9 +136,7 @@ class SqlAlchemyDailyReportRepository:
             invocation = await self.session.get(ActionInvocation, invocation_id)
             if invocation is None:
                 await self.session.rollback()
-                raise AppError(
-                    404, "INVOCATION_NOT_FOUND", "Action invocation was not found"
-                )
+                raise AppError(404, "INVOCATION_NOT_FOUND", "Action invocation was not found")
             invocation.status = InvocationStatus.SUCCEEDED
             invocation.result_ref = report.id
             invocation.error_code = None

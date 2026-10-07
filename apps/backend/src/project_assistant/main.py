@@ -57,7 +57,8 @@ def create_app() -> FastAPI:
 
     app.add_exception_handler(AppError, app_error_handler)  # type: ignore[arg-type]
     app.add_exception_handler(
-        RequestValidationError, request_validation_error_handler  # type: ignore[arg-type]
+        RequestValidationError,
+        request_validation_error_handler,  # type: ignore[arg-type]
     )
     app.include_router(system_router)
     app.include_router(session_router, prefix=settings.api_prefix)

@@ -15,4 +15,3 @@ class Project(Base):
     status: Mapped[str] = mapped_column(String(32), default="ACTIVE")
     start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     target_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-

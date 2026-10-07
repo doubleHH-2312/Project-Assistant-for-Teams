@@ -26,9 +26,7 @@ class DailyReportUpdate(ApiModel):
         default=None, alias="workSummary", min_length=1, max_length=4000
     )
     blocker: str | None = Field(default=None, max_length=4000)
-    next_action: str | None = Field(
-        default=None, alias="nextAction", min_length=1, max_length=2000
-    )
+    next_action: str | None = Field(default=None, alias="nextAction", min_length=1, max_length=2000)
 
 
 class DailyHistoryFilters(ApiModel):

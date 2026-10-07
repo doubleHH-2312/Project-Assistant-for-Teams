@@ -47,7 +47,8 @@
 
 ## Next action
 
-1. Fixed Entra SSO token verification in `auth.py` for custom API audience URIs and auto-provisioning Entra users.
-2. Regenerated Azure App Registration client secret and updated `TEAMS_APP_PASSWORD` on Vercel production.
-3. Reload Teams Tab to view Web App, and test Bot messaging with `/help` or direct chat.
+1. Created `BotExecutionTrace` logger module (`logger.py`) and integrated it into `app.py` and `provider.py`.
+2. Every Teams activity now tracks elapsed time, identity resolution, command parsing, LLM provider routing, and API HTTP error details, returning a clean `🛠️ Bot Processing Log` in the Teams chat reply.
+3. Verified 100 backend unit tests, ruff format/lint, and strict mypy type checking.
+4. Redeployed live update to Vercel production (`https://project-assistant-for-teams.vercel.app`).
 

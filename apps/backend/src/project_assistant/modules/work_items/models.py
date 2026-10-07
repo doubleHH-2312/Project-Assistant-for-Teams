@@ -19,4 +19,3 @@ class WorkItem(Base):
     status: Mapped[str] = mapped_column(String(32), default="NOT_STARTED")
     priority: Mapped[int] = mapped_column(Integer, default=3)
     planned_end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-

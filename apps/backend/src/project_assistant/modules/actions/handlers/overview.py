@@ -23,9 +23,7 @@ class DailySummaryActionInput(BaseModel):
 
 
 class OverviewService(Protocol):
-    async def get_overview(
-        self, team_id: str, reporting_date: date
-    ) -> TeamOverview: ...
+    async def get_overview(self, team_id: str, reporting_date: date) -> TeamOverview: ...
 
 
 class DailySummaryActionHandler:
@@ -45,9 +43,7 @@ class DailySummaryActionHandler:
         self.service = service
         self.clock = clock or (lambda: datetime.now(UTC))
 
-    async def execute(
-        self, context: ActionContext, payload: BaseModel
-    ) -> ActionResult:
+    async def execute(self, context: ActionContext, payload: BaseModel) -> ActionResult:
         if not isinstance(payload, DailySummaryActionInput):
             raise TypeError("DailySummaryActionHandler requires DailySummaryActionInput")
         team_id = context.current_team_id or payload.team_id
@@ -57,9 +53,9 @@ class DailySummaryActionHandler:
                 message="Select a Team to view its Daily Summary.",
                 data={"action": "daily-summary"},
             )
-        reporting_date = payload.reporting_date or self.clock().astimezone(
-            ZoneInfo(context.timezone)
-        ).date()
+        reporting_date = (
+            payload.reporting_date or self.clock().astimezone(ZoneInfo(context.timezone)).date()
+        )
         overview = await self.service.get_overview(team_id, reporting_date)
         return ActionResult(
             kind="daily_summary",

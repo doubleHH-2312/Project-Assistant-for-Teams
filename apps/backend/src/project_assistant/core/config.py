@@ -13,8 +13,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     api_prefix: str = "/api/v1"
     database_url: str = (
-        "postgresql+asyncpg://project_assistant:project_assistant@localhost:5432/"
-        "project_assistant"
+        "postgresql+asyncpg://project_assistant:project_assistant@localhost:5432/project_assistant"
     )
     database_deployment_mode: Literal["persistent", "serverless"] = "persistent"
     scheduled_jobs_enabled: bool = False
@@ -28,9 +27,7 @@ class Settings(BaseSettings):
     llm_base_url: str = "https://api.openai.com/v1"
     llm_api_key: SecretStr | None = Field(default=None, repr=False)
     llm_model: str | None = None
-    llm_structured_output_mode: Literal["json_schema", "json_object", "prompt"] = (
-        "json_schema"
-    )
+    llm_structured_output_mode: Literal["json_schema", "json_object", "prompt"] = "json_schema"
     llm_timeout_seconds: float = 20
     llm_max_attempts: int = 2
     teams_transport: Literal["mock", "sdk"] = "mock"
@@ -60,13 +57,13 @@ class Settings(BaseSettings):
         if self.llm_timeout_seconds <= 0 or self.llm_max_attempts < 1:
             raise ValueError("LLM timeout and max attempts must be positive")
         if self.teams_skip_auth and self.app_env not in {"local", "test"}:
-            raise ValueError(
-                "Teams unauthenticated mode is forbidden outside local/test"
-            )
+            raise ValueError("Teams unauthenticated mode is forbidden outside local/test")
         if self.database_deployment_mode == "serverless" and self.scheduled_jobs_enabled:
             raise ValueError("Scheduled jobs cannot run inside the serverless API process")
-        if self.teams_transport == "sdk" and not self.teams_skip_auth and not all(
-            [self.teams_app_id, self.teams_app_password, self.entra_tenant_id]
+        if (
+            self.teams_transport == "sdk"
+            and not self.teams_skip_auth
+            and not all([self.teams_app_id, self.teams_app_password, self.entra_tenant_id])
         ):
             raise ValueError(
                 "Authenticated Teams SDK mode requires app ID, app password, and tenant ID"

@@ -22,9 +22,7 @@ class ResolvedConversationBinding:
 
 
 class TeamsContextRepository(Protocol):
-    async def get_user(
-        self, tenant_id: str, external_user_id: str
-    ) -> User | None: ...
+    async def get_user(self, tenant_id: str, external_user_id: str) -> User | None: ...
 
     async def get_binding(
         self, tenant_id: str, conversation_id: str
@@ -32,13 +30,9 @@ class TeamsContextRepository(Protocol):
 
 
 class TeamsBindingRepository(Protocol):
-    async def save_binding(
-        self, binding: TeamsConversationBinding
-    ) -> TeamsConversationBinding: ...
+    async def save_binding(self, binding: TeamsConversationBinding) -> TeamsConversationBinding: ...
 
-    async def bind_team(
-        self, binding_id: str, team_id: str
-    ) -> TeamsConversationBinding: ...
+    async def bind_team(self, binding_id: str, team_id: str) -> TeamsConversationBinding: ...
 
 
 class BindingAuthorization(Protocol):
@@ -51,9 +45,7 @@ class SqlAlchemyTeamsContextRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def get_user(
-        self, tenant_id: str, external_user_id: str
-    ) -> User | None:
+    async def get_user(self, tenant_id: str, external_user_id: str) -> User | None:
         user = await self.session.scalar(
             select(User).where(
                 User.tenant_id == tenant_id,
@@ -120,9 +112,7 @@ class SqlAlchemyTeamsContextRepository:
             timezone=timezone or "UTC",
         )
 
-    async def save_binding(
-        self, binding: TeamsConversationBinding
-    ) -> TeamsConversationBinding:
+    async def save_binding(self, binding: TeamsConversationBinding) -> TeamsConversationBinding:
         existing = await self.session.scalar(
             select(TeamsConversationBinding).where(
                 TeamsConversationBinding.tenant_id == binding.tenant_id,
@@ -142,9 +132,7 @@ class SqlAlchemyTeamsContextRepository:
         await self.session.refresh(binding)
         return binding
 
-    async def bind_team(
-        self, binding_id: str, team_id: str
-    ) -> TeamsConversationBinding:
+    async def bind_team(self, binding_id: str, team_id: str) -> TeamsConversationBinding:
         binding = await self.session.get(TeamsConversationBinding, binding_id)
         if binding is None or not binding.active:
             raise AppError(404, "TEAMS_BINDING_NOT_FOUND", "Teams binding was not found")
@@ -178,9 +166,7 @@ class TeamsContextResolver:
         current_team_id: str | None = None
         timezone = "UTC"
         if conversation_type != ConversationType.PERSONAL:
-            binding = await self.repository.get_binding(
-                tenant_id, activity.conversation.id
-            )
+            binding = await self.repository.get_binding(tenant_id, activity.conversation.id)
             if binding is None or binding.team_id is None:
                 raise AppError(
                     422,
@@ -238,9 +224,7 @@ class TeamsInstallationService:
     async def bind_group(
         self, actor: User, binding_id: str, team_id: str
     ) -> TeamsConversationBinding:
-        await self.authorization.require(
-            actor.id, [team_id], Permission.MANAGE_TEAMS_BINDING
-        )
+        await self.authorization.require(actor.id, [team_id], Permission.MANAGE_TEAMS_BINDING)
         return await self.repository.bind_team(binding_id, team_id)
 
 

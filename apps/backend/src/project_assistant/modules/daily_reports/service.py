@@ -42,9 +42,7 @@ class DailyReportRepository(Protocol):
         self, user_id: str, work_item_id: str, report_date: date, team_id: str
     ) -> DailyReport | None: ...
 
-    async def get_by_id(
-        self, report_id: str, user_id: str, team_id: str
-    ) -> DailyReport | None: ...
+    async def get_by_id(self, report_id: str, user_id: str, team_id: str) -> DailyReport | None: ...
 
     async def list_for_user(self, user_id: str, team_id: str) -> list[DailyReport]: ...
 
@@ -58,9 +56,7 @@ class DailyReportRepository(Protocol):
         status: WorkStatus | None,
     ) -> list[DailyReport]: ...
 
-    async def get_latest_event(
-        self, daily_report_id: str
-    ) -> WorkItemStatusEvent | None: ...
+    async def get_latest_event(self, daily_report_id: str) -> WorkItemStatusEvent | None: ...
 
     async def save_with_event_and_success(
         self,
@@ -93,9 +89,7 @@ class DailyReportService:
         try:
             if request.team_id != team_id:
                 raise AppError(422, "TEAM_SCOPE_MISMATCH", "Payload Team does not match scope")
-            await self.authorization.require(
-                actor.id, [team_id], Permission.SUBMIT_OWN_DAILY
-            )
+            await self.authorization.require(actor.id, [team_id], Permission.SUBMIT_OWN_DAILY)
             team = await self.repository.get_team(team_id)
             if team is None:
                 raise AppError(404, "TEAM_NOT_FOUND", "Team was not found")
@@ -106,14 +100,8 @@ class DailyReportService:
             )
             project = await self.repository.get_project(request.project_id, team_id)
             work_item = await self.repository.get_work_item(request.work_item_id, team_id)
-            if (
-                project is None
-                or work_item is None
-                or work_item.project_id != project.id
-            ):
-                raise AppError(
-                    404, "WORK_ITEM_NOT_FOUND", "Project or work item was not found"
-                )
+            if project is None or work_item is None or work_item.project_id != project.id:
+                raise AppError(404, "WORK_ITEM_NOT_FOUND", "Project or work item was not found")
             existing = await self.repository.get_by_key(
                 actor.id, request.work_item_id, report_date, team_id
             )
@@ -160,9 +148,7 @@ class DailyReportService:
         invocation = await self._start_invocation(team_id, audit)
         invocation_id = invocation.id
         try:
-            await self.authorization.require(
-                actor.id, [team_id], Permission.SUBMIT_OWN_DAILY
-            )
+            await self.authorization.require(actor.id, [team_id], Permission.SUBMIT_OWN_DAILY)
             report = await self.repository.get_by_id(report_id, actor.id, team_id)
             if report is None:
                 raise AppError(404, "DAILY_REPORT_NOT_FOUND", "Daily report was not found")
@@ -187,24 +173,18 @@ class DailyReportService:
             await self.audit_service.fail(invocation_id, "INTERNAL_ERROR")
             raise
 
-    async def list_for_user(
-        self, actor: ActorIdentity, team_id: str
-    ) -> list[DailyReport]:
+    async def list_for_user(self, actor: ActorIdentity, team_id: str) -> list[DailyReport]:
         await self.authorization.require(actor.id, [team_id], Permission.VIEW_OWN_HISTORY)
         return await self.repository.list_for_user(actor.id, team_id)
 
     async def get_form_options(
         self, actor: ActorIdentity, team_id: str
     ) -> dict[str, list[dict[str, str]]]:
-        await self.authorization.require(
-            actor.id, [team_id], Permission.SUBMIT_OWN_DAILY
-        )
+        await self.authorization.require(actor.id, [team_id], Permission.SUBMIT_OWN_DAILY)
         projects = await self.repository.list_active_projects(team_id)
         work_items = await self.repository.list_work_items(team_id)
         return {
-            "projects": [
-                {"id": project.id, "name": project.name} for project in projects
-            ],
+            "projects": [{"id": project.id, "name": project.name} for project in projects],
             "workItems": [
                 {
                     "id": item.id,
@@ -219,9 +199,7 @@ class DailyReportService:
     async def list_history(
         self, actor: ActorIdentity, filters: DailyHistoryFilters
     ) -> list[DailyReport]:
-        await self.authorization.require(
-            actor.id, [filters.team_id], Permission.VIEW_OWN_HISTORY
-        )
+        await self.authorization.require(actor.id, [filters.team_id], Permission.VIEW_OWN_HISTORY)
         if filters.date_from > filters.date_to:
             raise AppError(422, "HISTORY_DATE_RANGE_INVALID", "Date range is invalid")
         return await self.repository.list_history(
@@ -248,9 +226,7 @@ class DailyReportService:
             timezone=timezone,
         )
 
-    async def _record_failure(
-        self, invocation_id: str, error: AppError
-    ) -> None:
+    async def _record_failure(self, invocation_id: str, error: AppError) -> None:
         if error.status_code == 403:
             await self.audit_service.deny(invocation_id, error.code)
         else:

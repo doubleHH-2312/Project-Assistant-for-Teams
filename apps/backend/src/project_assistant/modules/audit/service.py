@@ -72,9 +72,7 @@ class AuditService:
         )
         return await self.repository.save(invocation)
 
-    async def succeed(
-        self, invocation_id: str, result_ref: str | None = None
-    ) -> ActionInvocation:
+    async def succeed(self, invocation_id: str, result_ref: str | None = None) -> ActionInvocation:
         return await self._finish(
             invocation_id,
             InvocationStatus.SUCCEEDED,

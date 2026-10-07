@@ -25,9 +25,7 @@ class SqlAlchemyWeeklyReportRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def get_active_template(
-        self, team_id: str, scope: ReportScope
-    ) -> ReportTemplate | None:
+    async def get_active_template(self, team_id: str, scope: ReportScope) -> ReportTemplate | None:
         return await self.session.scalar(
             select(ReportTemplate).where(
                 ReportTemplate.team_id == team_id,
@@ -49,9 +47,7 @@ class SqlAlchemyWeeklyReportRepository:
             )
         )
 
-    async def list_team_ids_in_tenant(
-        self, team_ids: list[str], tenant_id: str
-    ) -> list[str]:
+    async def list_team_ids_in_tenant(self, team_ids: list[str], tenant_id: str) -> list[str]:
         if not team_ids:
             return []
         visible = await self.session.scalars(
@@ -61,9 +57,7 @@ class SqlAlchemyWeeklyReportRepository:
         )
         return list(visible)
 
-    async def get_template(
-        self, template_id: str, team_id: str | None
-    ) -> ReportTemplate | None:
+    async def get_template(self, template_id: str, team_id: str | None) -> ReportTemplate | None:
         query = select(ReportTemplate).where(ReportTemplate.id == template_id)
         query = query.where(
             ReportTemplate.team_id == team_id
@@ -88,9 +82,7 @@ class SqlAlchemyWeeklyReportRepository:
         )
         return list(reports)
 
-    async def list_status_events(
-        self, daily_report_ids: list[str]
-    ) -> list[WorkItemStatusEvent]:
+    async def list_status_events(self, daily_report_ids: list[str]) -> list[WorkItemStatusEvent]:
         if not daily_report_ids:
             return []
         events = await self.session.scalars(
@@ -191,16 +183,15 @@ class SqlAlchemyWeeklyReportRepository:
                 WeeklyReport.team_id.is_(None),
                 WeeklyReport.week_start == week_start,
                 ~WeeklyReport.id.in_(
-                    select(WeeklyReportTeam.weekly_report_id)
-                    .where(~WeeklyReportTeam.team_id.in_(selected))
+                    select(WeeklyReportTeam.weekly_report_id).where(
+                        ~WeeklyReportTeam.team_id.in_(selected)
+                    )
                 ),
             )
             .order_by(WeeklyReport.created_at.desc())
         )
 
-    async def get_by_id(
-        self, report_id: str, team_id: str | None
-    ) -> WeeklyReport | None:
+    async def get_by_id(self, report_id: str, team_id: str | None) -> WeeklyReport | None:
         query = select(WeeklyReport).where(WeeklyReport.id == report_id)
         query = query.where(
             WeeklyReport.team_id == team_id

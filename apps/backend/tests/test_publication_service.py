@@ -15,9 +15,7 @@ from project_assistant.modules.weekly_reports.models import (
 
 def _service_type():  # type: ignore[no-untyped-def]
     try:
-        return import_module(
-            "project_assistant.modules.publications.service"
-        ).PublicationService
+        return import_module("project_assistant.modules.publications.service").PublicationService
     except ModuleNotFoundError:
         pytest.fail("Publication service is not implemented")
 
@@ -86,12 +84,8 @@ async def test_confirmed_report_publication_is_explicit_and_idempotent() -> None
     authorization = RecordingAuthorization()
     service = _service_type()(repository, authorization)
 
-    first = await service.publish(
-        _actor(), "weekly-1", "conversation-1", "publish-key-1"
-    )
-    replay = await service.publish(
-        _actor(), "weekly-1", "conversation-1", "publish-key-1"
-    )
+    first = await service.publish(_actor(), "weekly-1", "conversation-1", "publish-key-1")
+    replay = await service.publish(_actor(), "weekly-1", "conversation-1", "publish-key-1")
 
     assert replay is first
     assert first.weekly_report_id == "weekly-1"
@@ -106,9 +100,7 @@ async def test_unconfirmed_report_cannot_be_published() -> None:
     service = _service_type()(repository, RecordingAuthorization())
 
     with pytest.raises(AppError) as private_draft:
-        await service.publish(
-            _actor(), "weekly-1", "conversation-1", "publish-key-2"
-        )
+        await service.publish(_actor(), "weekly-1", "conversation-1", "publish-key-2")
 
     assert private_draft.value.code == "WEEKLY_REPORT_NOT_CONFIRMED"
     assert repository.by_key == {}
@@ -118,13 +110,9 @@ async def test_unconfirmed_report_cannot_be_published() -> None:
 async def test_idempotency_key_cannot_be_reused_for_another_destination() -> None:
     repository = PublicationRepository(_report(WeeklyReportStatus.CONFIRMED))
     service = _service_type()(repository, RecordingAuthorization())
-    await service.publish(
-        _actor(), "weekly-1", "conversation-1", "publish-key-reused"
-    )
+    await service.publish(_actor(), "weekly-1", "conversation-1", "publish-key-reused")
 
     with pytest.raises(AppError) as reused:
-        await service.publish(
-            _actor(), "weekly-1", "conversation-2", "publish-key-reused"
-        )
+        await service.publish(_actor(), "weekly-1", "conversation-2", "publish-key-reused")
 
     assert reused.value.code == "IDEMPOTENCY_KEY_REUSED"

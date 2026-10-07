@@ -45,9 +45,7 @@ def _weekly(
         template_id="template-1",
         template_version=1,
         created_by="user-1",
-        confirmed_at=(
-            recorded_at if status == WeeklyReportStatus.CONFIRMED else None
-        ),
+        confirmed_at=(recorded_at if status == WeeklyReportStatus.CONFIRMED else None),
         created_at=recorded_at,
         updated_at=recorded_at,
     )
@@ -125,9 +123,7 @@ def test_team_and_multiteam_evidence_use_only_confirmed_direct_inputs() -> None:
     projects = [
         {
             "projectId": "project-a",
-            "completedTasks": [
-                {"text": "Shipped API", "evidenceIds": ["daily-1"]}
-            ],
+            "completedTasks": [{"text": "Shipped API", "evidenceIds": ["daily-1"]}],
             "inProgressTasks": [],
             "blockers": [],
             "risks": [],
@@ -154,9 +150,7 @@ def test_team_and_multiteam_evidence_use_only_confirmed_direct_inputs() -> None:
     )
     team_bundle = module.build_team_evidence([confirmed_member, draft_member])
 
-    assert [item["memberReportId"] for item in team_bundle.payload] == [
-        "member-confirmed"
-    ]
+    assert [item["memberReportId"] for item in team_bundle.payload] == ["member-confirmed"]
     assert team_bundle.payload[0]["projects"] == projects
     assert [ref.source_id for ref in team_bundle.references] == ["member-confirmed"]
 
@@ -193,9 +187,7 @@ def test_generated_content_rejects_unknown_project_and_evidence_ids() -> None:
         "projects": [
             {
                 "projectId": "project-invented",
-                "completedTasks": [
-                    {"text": "Invented fact", "evidenceIds": ["daily-1"]}
-                ],
+                "completedTasks": [{"text": "Invented fact", "evidenceIds": ["daily-1"]}],
             }
         ]
     }
@@ -203,9 +195,7 @@ def test_generated_content_rejects_unknown_project_and_evidence_ids() -> None:
         "projects": [
             {
                 "projectId": "project-a",
-                "completedTasks": [
-                    {"text": "Invented fact", "evidenceIds": ["daily-invented"]}
-                ],
+                "completedTasks": [{"text": "Invented fact", "evidenceIds": ["daily-invented"]}],
             }
         ]
     }

@@ -62,9 +62,7 @@ class TimelineRepository:
             return report
         return None
 
-    async def get_by_id(
-        self, report_id: str, user_id: str, team_id: str
-    ) -> DailyReport | None:
+    async def get_by_id(self, report_id: str, user_id: str, team_id: str) -> DailyReport | None:
         report = self.report
         if (
             report is not None

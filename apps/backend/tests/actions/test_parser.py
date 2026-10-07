@@ -15,4 +15,3 @@ def test_parse_bot_mention_normalizes_case_whitespace_and_arguments() -> None:
 def test_ignore_ordinary_or_other_bot_text() -> None:
     assert parse_command("hello project assistant", None) is None
     assert parse_command("@Other Bot /daily", "@Project Assistant") is None
-

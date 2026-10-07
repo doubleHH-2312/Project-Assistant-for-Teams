@@ -32,15 +32,16 @@ class EntraTokenVerifier:
             options={"verify_aud": False, "verify_iss": False},
         )
 
+        client_id = self.settings.entra_client_id
         token_aud = claims.get("aud")
         token_iss = claims.get("iss")
 
         # Validate audience: must equal or contain entra_client_id
         aud_valid = False
-        if isinstance(token_aud, str) and self.settings.entra_client_id in token_aud:
+        if client_id and isinstance(token_aud, str) and client_id in token_aud:
             aud_valid = True
-        elif isinstance(token_aud, list) and any(
-            isinstance(a, str) and self.settings.entra_client_id in a for a in token_aud
+        elif client_id and isinstance(token_aud, list) and any(
+            isinstance(a, str) and client_id in a for a in token_aud
         ):
             aud_valid = True
 
@@ -79,13 +80,15 @@ async def get_current_user(
             claims = await asyncio.to_thread(EntraTokenVerifier(settings).verify, token)
         except (jwt.PyJWTError, ValueError) as error:
             raise AppError(401, "TOKEN_INVALID", "Access token is invalid") from error
-        object_id = claims.get("oid")
-        tenant_id = claims.get("tid")
+        raw_oid = claims.get("oid")
+        raw_tid = claims.get("tid")
+        if not raw_oid or not raw_tid:
+            raise AppError(401, "TOKEN_INVALID", "Access token identity is invalid")
+        object_id: str = str(raw_oid)
+        tenant_id: str = str(raw_tid)
         email = claims.get("preferred_username") or claims.get("upn") or claims.get("email")
         name = claims.get("name") or (email.split("@")[0] if email else "Teams User")
 
-        if not object_id:
-            raise AppError(401, "TOKEN_INVALID", "Access token identity is invalid")
         if settings.entra_tenant_id != "common" and tenant_id != settings.entra_tenant_id:
             raise AppError(401, "TOKEN_INVALID", "Access token identity is invalid")
 

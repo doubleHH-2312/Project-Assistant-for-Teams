@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Mapping
 from typing import Any, Protocol
 
@@ -20,6 +21,7 @@ from project_assistant.integrations.llm.provider import LLMProvider
 from project_assistant.modules.actions.contracts import ActionContext, ActionResult
 from project_assistant.modules.actions.parser import ParsedCommand, parse_command
 
+from .logger import BotExecutionTrace
 from .presenters import TeamsPresentation, present_action_result
 
 
@@ -40,8 +42,6 @@ class InstallationRecorderProtocol(Protocol):
     async def record(self, activity: InstalledActivity) -> None: ...
 
 
-import logging
-
 logger = logging.getLogger(__name__)
 
 
@@ -57,32 +57,51 @@ class TeamsMessageProcessor:
         self.llm_provider = llm_provider
 
     async def process(
-        self, activity: MessageActivity, bot_mention_text: str | None
+        self,
+        activity: MessageActivity,
+        bot_mention_text: str | None,
+        trace: BotExecutionTrace | None = None,
     ) -> TeamsPresentation | None:
         raw_text = activity.text or ""
-        logger.info("[BOT_PROCESS] Processing activity text: %r, mention: %r", raw_text, bot_mention_text)
+        if trace:
+            trace.log("🔍 Parsing Command", f"Text={raw_text!r}, Mention={bot_mention_text!r}")
         command = parse_command(raw_text, bot_mention_text)
         if command is None:
             user_message = raw_text
             if bot_mention_text and user_message.startswith(bot_mention_text):
                 user_message = user_message[len(bot_mention_text) :].strip()
             if not user_message:
-                logger.info("[BOT_PROCESS] Empty user message after mention strip, skipping.")
+                if trace:
+                    trace.log("⚠️ Empty User Message", "No message content after mention strip")
                 return None
-            logger.info("[BOT_LLM_CHAT_START] Sending message to LLM provider (%r): %r", self.llm_provider, user_message)
+            if trace:
+                trace.log(
+                    "💬 Routing to LLM",
+                    f"Provider={self.llm_provider.__class__.__name__}, Prompt={user_message!r}",
+                )
             try:
                 reply = await self.llm_provider.chat(user_message)
-                logger.info("[BOT_LLM_CHAT_SUCCESS] LLM returned response length: %d, snippet: %r", len(reply), reply[:100])
+                if trace:
+                    trace.log("✅ LLM Response Received", f"Length={len(reply)} chars")
                 return TeamsPresentation(shared_text=reply, private_card={})
             except Exception as error:
+                if trace:
+                    trace.log_error("LLM Chat Call Failed", error)
                 logger.exception("[BOT_LLM_CHAT_ERROR] LLM chat failed: %s", error)
                 raise
 
-        logger.info("[BOT_COMMAND] Command parsed: %s, resolving context...", command.name)
+        if trace:
+            trace.log("⚡ Command Parsed", f"Command=/{command.name}, Args={command.arguments}")
+            trace.log("🆔 Resolving Context", f"Action=/{command.name}")
         context = await self.context_resolver.resolve(activity, command.name)
-        logger.info("[BOT_DISPATCH] Dispatching action: %s, actor: %s", command.name, context.actor_id)
+        if trace:
+            trace.log(
+                "👤 Identity Resolved", f"Actor={context.actor_id}, Tenant={context.tenant_id}"
+            )
+            trace.log("⚙️ Dispatching Action", f"Command={command.name}")
         result = await self.dispatcher.dispatch(command, context, _payload_from_arguments(command))
-        logger.info("[BOT_RESULT] Action result kind: %s, success: %s", result.kind, result.message)
+        if trace:
+            trace.log("✅ Action Completed", f"Kind={result.kind}, Message={result.message}")
         return present_action_result(result, context.conversation_type)
 
     async def process_card(self, activity: AdaptiveCardInvokeActivity) -> TeamsPresentation:
@@ -127,26 +146,33 @@ def create_teams_app(
         from_id = getattr(ctx.activity.from_, "id", "unknown")
         conv_id = getattr(ctx.activity.conversation, "id", "unknown")
         text = getattr(ctx.activity, "text", "")
-        logger.info("[BOT_ON_MESSAGE] Incoming message from=%s conv=%s text=%r", from_id, conv_id, text)
+        trace = BotExecutionTrace(conversation_id=conv_id, from_id=from_id)
+        trace.log("📥 Activity Received", f"Text={text!r}")
         try:
             mention_text = _bot_mention_text(ctx.activity)
-            presentation = await processor.process(ctx.activity, mention_text)
+            presentation = await processor.process(ctx.activity, mention_text, trace=trace)
             if presentation is not None:
+                log_suffix = f"\n\n---\n{trace.render_markdown()}"
                 if (
                     _is_personal(ctx.activity)
                     and presentation.private_card
                     and "type" in presentation.private_card
                 ):
-                    logger.info("[BOT_SEND_REPLY] Sending AdaptiveCard to personal chat")
+                    trace.log("📤 Sending AdaptiveCard to personal chat")
                     await ctx.send(AdaptiveCard.model_validate(presentation.private_card))
+                    await ctx.send(f"✅ Action rendered above.{log_suffix}")
                 else:
-                    logger.info("[BOT_SEND_REPLY] Sending shared text to chat: %r", presentation.shared_text[:100])
-                    await ctx.send(presentation.shared_text)
+                    trace.log("📤 Sending shared text reply")
+                    await ctx.send(f"{presentation.shared_text}{log_suffix}")
             else:
-                logger.info("[BOT_ON_MESSAGE] Presentation is None, no message sent.")
+                trace.log("⚠️ Presentation Empty", "No message sent")
+                await ctx.send(f"⚠️ Empty presentation.{log_suffix}")
         except Exception as error:
-            logger.exception("[BOT_ERROR] Failed to process message from=%s text=%r: %s", from_id, text, error)
-            await ctx.send(f"⚠️ Error: {error}")
+            trace.log_error("Failed Processing Activity", error)
+            logger.exception(
+                "[BOT_ERROR] Failed to process message from=%s text=%r: %s", from_id, text, error
+            )
+            await ctx.send(f"⚠️ **Bot Error:** `{error}`\n\n---\n{trace.render_markdown()}")
 
     @teams_app.on_card_action_execute  # type: ignore[untyped-decorator]
     async def on_card_action(

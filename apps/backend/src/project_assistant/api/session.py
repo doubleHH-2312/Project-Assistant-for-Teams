@@ -58,9 +58,7 @@ class SessionService:
                 team_name=team.name,
                 timezone=team.timezone,
                 role=membership.role,
-                permissions=sorted(
-                    ROLE_PERMISSIONS[membership.role], key=lambda item: item.value
-                ),
+                permissions=sorted(ROLE_PERMISSIONS[membership.role], key=lambda item: item.value),
             )
             for membership, team in rows
         ]

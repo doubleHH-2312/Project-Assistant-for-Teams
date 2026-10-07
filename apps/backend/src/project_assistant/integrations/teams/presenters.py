@@ -68,9 +68,7 @@ def _result_card(result: ActionResult) -> dict[str, Any]:
     return card
 
 
-def _set_choices(
-    card: dict[str, Any], input_id: str, options: object
-) -> None:
+def _set_choices(card: dict[str, Any], input_id: str, options: object) -> None:
     if not isinstance(options, list):
         return
     for element in card.get("body", []):

@@ -31,9 +31,7 @@ class LLMProviderError(Exception):
 class MockLLMProvider:
     """Deterministic transformer that only copies supplied evidence."""
 
-    async def generate(
-        self, template: dict[str, Any], evidence: list[dict[str, Any]]
-    ) -> LLMResult:
+    async def generate(self, template: dict[str, Any], evidence: list[dict[str, Any]]) -> LLMResult:
         properties = template.get("properties", {})
         if isinstance(properties, dict) and "teams" in properties:
             content: dict[str, Any] = {"teams": self._team_sections(evidence)}
@@ -77,9 +75,7 @@ class MockLLMProvider:
         return content
 
     @staticmethod
-    def _append_legacy_task(
-        content: dict[str, list[str]], task: dict[str, Any]
-    ) -> None:
+    def _append_legacy_task(content: dict[str, list[str]], task: dict[str, Any]) -> None:
         work_item = str(task.get("workItemId", "unknown"))
         summary = str(task.get("workSummary", ""))
         entry = f"{work_item}: {summary}"
@@ -128,14 +124,8 @@ class MockLLMProvider:
                     if not isinstance(items, list):
                         continue
                     for item in items:
-                        text = (
-                            str(item.get("text", ""))
-                            if isinstance(item, dict)
-                            else str(item)
-                        )
-                        project[section].append(
-                            {"text": text, "evidenceIds": [source_id]}
-                        )
+                        text = str(item.get("text", "")) if isinstance(item, dict) else str(item)
+                        project[section].append({"text": text, "evidenceIds": [source_id]})
         return [projects[key] for key in sorted(projects)]
 
     @staticmethod
@@ -179,9 +169,7 @@ class MockLLMProvider:
         )
 
     @staticmethod
-    def _append_project_task(
-        project: dict[str, Any], task: dict[str, Any]
-    ) -> None:
+    def _append_project_task(project: dict[str, Any], task: dict[str, Any]) -> None:
         work_item = str(task.get("workItemId", "unknown"))
         summary = str(task.get("workSummary", ""))
         evidence_ids = [
@@ -243,9 +231,7 @@ class OpenAICompatibleLLMProvider:
             f"output_mode={self.output_mode!r})"
         )
 
-    async def generate(
-        self, template: dict[str, Any], evidence: list[dict[str, Any]]
-    ) -> LLMResult:
+    async def generate(self, template: dict[str, Any], evidence: list[dict[str, Any]]) -> LLMResult:
         payload: dict[str, Any] = {
             "model": self.model,
             "messages": [
@@ -303,9 +289,7 @@ class OpenAICompatibleLLMProvider:
                 if response.status_code == 429 or response.status_code >= 500:
                     if attempt < self.max_attempts:
                         continue
-                    raise LLMProviderError(
-                        "LLM_UNAVAILABLE", "The LLM endpoint is unavailable"
-                    )
+                    raise LLMProviderError("LLM_UNAVAILABLE", "The LLM endpoint is unavailable")
                 if response.status_code >= 400:
                     raise LLMProviderError(
                         "LLM_REQUEST_REJECTED", "The LLM endpoint rejected the request"
@@ -350,12 +334,13 @@ class OpenAICompatibleLLMProvider:
                 if response.status_code == 429 or response.status_code >= 500:
                     if attempt < self.max_attempts:
                         continue
-                    raise LLMProviderError(
-                        "LLM_UNAVAILABLE", "The LLM endpoint is unavailable"
-                    )
+                    raise LLMProviderError("LLM_UNAVAILABLE", "The LLM endpoint is unavailable")
                 if response.status_code >= 400:
+                    error_snippet = response.text[:300]
                     raise LLMProviderError(
-                        "LLM_REQUEST_REJECTED", "The LLM endpoint rejected the request"
+                        "LLM_REQUEST_REJECTED",
+                        f"The LLM endpoint rejected the request "
+                        f"(HTTP {response.status_code}): {error_snippet}",
                     )
                 body = response.json()
                 return str(body["choices"][0]["message"]["content"])
@@ -365,11 +350,7 @@ class OpenAICompatibleLLMProvider:
         try:
             body = response.json()
             content_value = body["choices"][0]["message"]["content"]
-            content = (
-                json.loads(content_value)
-                if isinstance(content_value, str)
-                else content_value
-            )
+            content = json.loads(content_value) if isinstance(content_value, str) else content_value
             if not isinstance(content, dict):
                 raise TypeError("LLM content must be a JSON object")
         except (ValueError, TypeError, KeyError, IndexError) as error:

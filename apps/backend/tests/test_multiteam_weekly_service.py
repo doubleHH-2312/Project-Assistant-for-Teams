@@ -87,9 +87,7 @@ class CapturingProvider:
         self.evidence = evidence
         return LLMResult(
             content={
-                "teams": [
-                    {"teamId": "team-a", "projects": [{"projectId": "project-team-a"}]}
-                ]
+                "teams": [{"teamId": "team-a", "projects": [{"projectId": "project-team-a"}]}]
             },
             provider="mock",
             metadata={"mode": "test"},
@@ -170,9 +168,7 @@ async def test_multiteam_generation_requires_all_teams_and_uses_confirmed_team_r
             "evidenceIds": ["weekly-team-a"],
         }
     ]
-    assert [reference.source_id for reference in repository.saved_references] == [
-        "weekly-team-a"
-    ]
+    assert [reference.source_id for reference in repository.saved_references] == ["weekly-team-a"]
 
 
 @pytest.mark.asyncio

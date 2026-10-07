@@ -100,9 +100,7 @@ async def test_multiteam_action_accepts_only_personal_context_and_selected_teams
         ),
     )
 
-    assert handler.definition.allowed_contexts == frozenset(
-        {ConversationContext.PERSONAL}
-    )
+    assert handler.definition.allowed_contexts == frozenset({ConversationContext.PERSONAL})
     assert service.calls[0][1].team_ids == ["team-a", "team-b"]
     assert service.calls[0][1].scope == ReportScope.MULTI_TEAM
     assert result.kind == "weekly_multi_team_draft"

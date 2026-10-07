@@ -31,9 +31,7 @@ class FakeDailyReportRepository:
         )
         self.projects = {"project-1": Project(id="project-1", team_id="team-1", name="MVP")}
         self.work_items = {
-            "item-1": WorkItem(
-                id="item-1", project_id="project-1", code="OPS-001", title="Build"
-            )
+            "item-1": WorkItem(id="item-1", project_id="project-1", code="OPS-001", title="Build")
         }
         self.reports: dict[str, DailyReport] = {}
         self.events: list[WorkItemStatusEvent] = []
@@ -65,9 +63,7 @@ class FakeDailyReportRepository:
             None,
         )
 
-    async def get_by_id(
-        self, report_id: str, user_id: str, team_id: str
-    ) -> DailyReport | None:
+    async def get_by_id(self, report_id: str, user_id: str, team_id: str) -> DailyReport | None:
         report = self.reports.get(report_id)
         project = self.projects.get(report.project_id) if report is not None else None
         if (
@@ -83,13 +79,10 @@ class FakeDailyReportRepository:
         return [
             report
             for report in self.reports.values()
-            if report.user_id == user_id
-            and self.projects[report.project_id].team_id == team_id
+            if report.user_id == user_id and self.projects[report.project_id].team_id == team_id
         ]
 
-    async def get_latest_event(
-        self, daily_report_id: str
-    ) -> WorkItemStatusEvent | None:
+    async def get_latest_event(self, daily_report_id: str) -> WorkItemStatusEvent | None:
         events = [event for event in self.events if event.daily_report_id == daily_report_id]
         return events[-1] if events else None
 
@@ -190,15 +183,11 @@ async def test_create_rejects_duplicate_and_exposes_effective_blocker() -> None:
         nextAction="Resume integration",
     )
 
-    created = await service.create(
-        member(), "team-1", request, audit_context("daily:create:1")
-    )
+    created = await service.create(member(), "team-1", request, audit_context("daily:create:1"))
 
     assert created.effective_blocker == "Waiting for approved sample data"
     with pytest.raises(AppError) as duplicate:
-        await service.create(
-            member(), "team-1", request, audit_context("daily:create:2")
-        )
+        await service.create(member(), "team-1", request, audit_context("daily:create:2"))
     assert duplicate.value.status_code == 409
     assert duplicate.value.code == "DAILY_REPORT_EXISTS"
 

@@ -33,25 +33,16 @@ def test_initial_migration_builds_expected_schema(tmp_path: Path) -> None:
         "report_publications",
         "teams_conversation_bindings",
     }.issubset(tables)
-    daily_columns = {
-        column["name"] for column in inspector.get_columns("daily_reports")
-    }
-    assert {"team_id", "source", "submitted_at", "last_edited_at"}.issubset(
-        daily_columns
-    )
+    daily_columns = {column["name"] for column in inspector.get_columns("daily_reports")}
+    assert {"team_id", "source", "submitted_at", "last_edited_at"}.issubset(daily_columns)
     weekly_team_id = next(
-        column
-        for column in inspector.get_columns("weekly_reports")
-        if column["name"] == "team_id"
+        column for column in inspector.get_columns("weekly_reports") if column["name"] == "team_id"
     )
     template_columns = {
-        column["name"]: column
-        for column in inspector.get_columns("report_templates")
+        column["name"]: column for column in inspector.get_columns("report_templates")
     }
     weekly_scope = next(
-        column
-        for column in inspector.get_columns("weekly_reports")
-        if column["name"] == "scope"
+        column for column in inspector.get_columns("weekly_reports") if column["name"] == "scope"
     )
     assert weekly_team_id["nullable"] is True
     assert weekly_scope["type"].length >= len("MULTI_TEAM")
@@ -59,12 +50,10 @@ def test_initial_migration_builds_expected_schema(tmp_path: Path) -> None:
     assert template_columns["tenant_id"]["nullable"] is True
     assert template_columns["scope"]["type"].length >= len("MULTI_TEAM")
     binding_columns = {
-        column["name"]
-        for column in inspector.get_columns("teams_conversation_bindings")
+        column["name"] for column in inspector.get_columns("teams_conversation_bindings")
     }
     membership_columns = {
-        column["name"]: column
-        for column in inspector.get_columns("team_memberships")
+        column["name"]: column for column in inspector.get_columns("team_memberships")
     }
     assert membership_columns["joined_at"]["default"] is not None
     assert {
@@ -159,32 +148,38 @@ def test_membership_migration_backfills_legacy_user_scope(tmp_path: Path) -> Non
         "tenant_id",
         "backfill_window_days",
     }
-    assert "tenant_id" in {
-        column["name"] for column in inspector.get_columns("users")
-    }
+    assert "tenant_id" in {column["name"] for column in inspector.get_columns("users")}
     assert {column["name"] for column in inspector.get_columns("users")} & {
         "role",
         "team_id",
     } == set()
     with engine.connect() as connection:
-        membership = connection.execute(
-            text(
-                """
+        membership = (
+            connection.execute(
+                text(
+                    """
                 SELECT user_id, team_id, role, active
                 FROM team_memberships
                 WHERE user_id = 'user-lead'
                 """
+                )
             )
-        ).mappings().one()
-        team = connection.execute(
-            text(
-                """
+            .mappings()
+            .one()
+        )
+        team = (
+            connection.execute(
+                text(
+                    """
                 SELECT tenant_id, backfill_window_days
                 FROM teams
                 WHERE id = 'team-legacy'
                 """
+                )
             )
-        ).mappings().one()
+            .mappings()
+            .one()
+        )
         user_tenant = connection.execute(
             text("SELECT tenant_id FROM users WHERE id = 'user-lead'")
         ).scalar_one()

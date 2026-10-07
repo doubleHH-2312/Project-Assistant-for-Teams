@@ -44,9 +44,7 @@ class FakeOverviewRepository:
                 status=report.status,
                 effective_blocker=report.effective_blocker,
                 business_date=report.report_date,
-                recorded_at=datetime.combine(
-                    report.report_date, datetime.min.time(), tzinfo=UTC
-                ),
+                recorded_at=datetime.combine(report.report_date, datetime.min.time(), tzinfo=UTC),
                 local_datetime=datetime.combine(
                     report.report_date, datetime.min.time(), tzinfo=UTC
                 ),

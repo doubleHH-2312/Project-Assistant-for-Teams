@@ -42,9 +42,9 @@ class SessionScopedTeamsContextResolver:
 
     async def resolve(self, activity: Any, action: str) -> ActionContext:
         async with self.session_factory() as session:
-            return await TeamsContextResolver(
-                SqlAlchemyTeamsContextRepository(session)
-            ).resolve(activity, action)
+            return await TeamsContextResolver(SqlAlchemyTeamsContextRepository(session)).resolve(
+                activity, action
+            )
 
 
 class SessionScopedActionDispatcher:
@@ -63,18 +63,14 @@ class SessionScopedActionDispatcher:
         payload: Mapping[str, Any],
     ) -> ActionResult:
         async with self.session_factory() as session:
-            authorization = AuthorizationService(
-                SqlAlchemyMembershipRepository(session)
-            )
+            authorization = AuthorizationService(SqlAlchemyMembershipRepository(session))
             audit_service = AuditService(SqlAlchemyAuditRepository(session))
             daily_service = DailyReportService(
                 SqlAlchemyDailyReportRepository(session),
                 authorization,
                 audit_service,
             )
-            overview_service = TeamOverviewService(
-                SqlAlchemyOverviewRepository(session)
-            )
+            overview_service = TeamOverviewService(SqlAlchemyOverviewRepository(session))
             weekly_service = WeeklyReportService(
                 SqlAlchemyWeeklyReportRepository(session),
                 build_llm_provider(self.settings),
@@ -107,14 +103,10 @@ class SessionScopedInstallationRecorder:
             return
         async with self.session_factory() as session:
             repository = SqlAlchemyTeamsContextRepository(session)
-            actor: User | None = await repository.get_user(
-                tenant_id, external_user_id
-            )
+            actor: User | None = await repository.get_user(tenant_id, external_user_id)
             if actor is None:
                 return
-            authorization = AuthorizationService(
-                SqlAlchemyMembershipRepository(session)
-            )
+            authorization = AuthorizationService(SqlAlchemyMembershipRepository(session))
             service = TeamsInstallationService(repository, authorization)
             await service.record_installation(
                 actor=actor,

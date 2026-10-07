@@ -74,9 +74,7 @@ async def test_personal_install_has_no_fixed_team_and_group_binding_is_pm_only()
     assert personal.team_id is None
     assert group.user_id is None
     assert bound.team_id == "team-1"
-    assert authorization.calls == [
-        ("pm-1", ["team-1"], Permission.MANAGE_TEAMS_BINDING)
-    ]
+    assert authorization.calls == [("pm-1", ["team-1"], Permission.MANAGE_TEAMS_BINDING)]
 
 
 @pytest.mark.asyncio

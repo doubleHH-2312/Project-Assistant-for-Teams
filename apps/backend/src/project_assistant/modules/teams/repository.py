@@ -51,8 +51,7 @@ class SqlAlchemyOverviewRepository:
             .where(
                 WorkItemStatusEvent.team_id == team_id,
                 WorkItemStatusEvent.local_date <= reporting_date,
-                WorkItemStatusEvent.local_date
-                >= reporting_date - timedelta(days=history_days),
+                WorkItemStatusEvent.local_date >= reporting_date - timedelta(days=history_days),
             )
             .order_by(WorkItemStatusEvent.recorded_at, WorkItemStatusEvent.id)
         )
