@@ -40,6 +40,11 @@ class InstallationRecorderProtocol(Protocol):
     async def record(self, activity: InstalledActivity) -> None: ...
 
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 class TeamsMessageProcessor:
     def __init__(
         self,
@@ -54,18 +59,30 @@ class TeamsMessageProcessor:
     async def process(
         self, activity: MessageActivity, bot_mention_text: str | None
     ) -> TeamsPresentation | None:
-        command = parse_command(activity.text or "", bot_mention_text)
+        raw_text = activity.text or ""
+        logger.info("[BOT_PROCESS] Processing activity text: %r, mention: %r", raw_text, bot_mention_text)
+        command = parse_command(raw_text, bot_mention_text)
         if command is None:
-            user_message = activity.text or ""
+            user_message = raw_text
             if bot_mention_text and user_message.startswith(bot_mention_text):
                 user_message = user_message[len(bot_mention_text) :].strip()
             if not user_message:
+                logger.info("[BOT_PROCESS] Empty user message after mention strip, skipping.")
                 return None
-            reply = await self.llm_provider.chat(user_message)
-            return TeamsPresentation(shared_text=reply, private_card={})
+            logger.info("[BOT_LLM_CHAT_START] Sending message to LLM provider (%r): %r", self.llm_provider, user_message)
+            try:
+                reply = await self.llm_provider.chat(user_message)
+                logger.info("[BOT_LLM_CHAT_SUCCESS] LLM returned response length: %d, snippet: %r", len(reply), reply[:100])
+                return TeamsPresentation(shared_text=reply, private_card={})
+            except Exception as error:
+                logger.exception("[BOT_LLM_CHAT_ERROR] LLM chat failed: %s", error)
+                raise
 
+        logger.info("[BOT_COMMAND] Command parsed: %s, resolving context...", command.name)
         context = await self.context_resolver.resolve(activity, command.name)
+        logger.info("[BOT_DISPATCH] Dispatching action: %s, actor: %s", command.name, context.actor_id)
         result = await self.dispatcher.dispatch(command, context, _payload_from_arguments(command))
+        logger.info("[BOT_RESULT] Action result kind: %s, success: %s", result.kind, result.message)
         return present_action_result(result, context.conversation_type)
 
     async def process_card(self, activity: AdaptiveCardInvokeActivity) -> TeamsPresentation:
@@ -107,6 +124,10 @@ def create_teams_app(
 
     @teams_app.on_message  # type: ignore[untyped-decorator]
     async def on_message(ctx: ActivityContext[MessageActivity]) -> None:
+        from_id = getattr(ctx.activity.from_, "id", "unknown")
+        conv_id = getattr(ctx.activity.conversation, "id", "unknown")
+        text = getattr(ctx.activity, "text", "")
+        logger.info("[BOT_ON_MESSAGE] Incoming message from=%s conv=%s text=%r", from_id, conv_id, text)
         try:
             mention_text = _bot_mention_text(ctx.activity)
             presentation = await processor.process(ctx.activity, mention_text)
@@ -116,12 +137,15 @@ def create_teams_app(
                     and presentation.private_card
                     and "type" in presentation.private_card
                 ):
+                    logger.info("[BOT_SEND_REPLY] Sending AdaptiveCard to personal chat")
                     await ctx.send(AdaptiveCard.model_validate(presentation.private_card))
                 else:
+                    logger.info("[BOT_SEND_REPLY] Sending shared text to chat: %r", presentation.shared_text[:100])
                     await ctx.send(presentation.shared_text)
+            else:
+                logger.info("[BOT_ON_MESSAGE] Presentation is None, no message sent.")
         except Exception as error:
-            import logging
-            logging.getLogger(__name__).exception("Error processing Teams message")
+            logger.exception("[BOT_ERROR] Failed to process message from=%s text=%r: %s", from_id, text, error)
             await ctx.send(f"⚠️ Error: {error}")
 
     @teams_app.on_card_action_execute  # type: ignore[untyped-decorator]
