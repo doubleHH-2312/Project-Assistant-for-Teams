@@ -107,13 +107,22 @@ def create_teams_app(
 
     @teams_app.on_message  # type: ignore[untyped-decorator]
     async def on_message(ctx: ActivityContext[MessageActivity]) -> None:
-        mention_text = _bot_mention_text(ctx.activity)
-        presentation = await processor.process(ctx.activity, mention_text)
-        if presentation is not None:
-            if _is_personal(ctx.activity) and presentation.private_card:
-                await ctx.send(AdaptiveCard.model_validate(presentation.private_card))
-            else:
-                await ctx.send(presentation.shared_text)
+        try:
+            mention_text = _bot_mention_text(ctx.activity)
+            presentation = await processor.process(ctx.activity, mention_text)
+            if presentation is not None:
+                if (
+                    _is_personal(ctx.activity)
+                    and presentation.private_card
+                    and "type" in presentation.private_card
+                ):
+                    await ctx.send(AdaptiveCard.model_validate(presentation.private_card))
+                else:
+                    await ctx.send(presentation.shared_text)
+        except Exception as error:
+            import logging
+            logging.getLogger(__name__).exception("Error processing Teams message")
+            await ctx.send(f"⚠️ Error: {error}")
 
     @teams_app.on_card_action_execute  # type: ignore[untyped-decorator]
     async def on_card_action(
