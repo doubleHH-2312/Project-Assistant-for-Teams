@@ -59,5 +59,9 @@
     }
   ],
   "permissions": ["identity"],
-  "validDomains": ["__APP_HOSTNAME__"]
+  "validDomains": ["__APP_HOSTNAME__"],
+  "webApplicationInfo": {
+    "id": "__TEAMS_APP_ID__",
+    "resource": "api://__APP_HOSTNAME__/__TEAMS_APP_ID__"
+  }
 }
