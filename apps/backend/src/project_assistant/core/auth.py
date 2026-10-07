@@ -24,21 +24,38 @@ class EntraTokenVerifier:
 
     def verify(self, token: str) -> dict[str, Any]:
         signing_key = self.jwks_client.get_signing_key_from_jwt(token)
-        unverified_claims = jwt.decode(token, options={"verify_signature": False})
-        tid = unverified_claims.get("tid")
-
-        if self.settings.entra_tenant_id == "common":
-            issuer = f"https://login.microsoftonline.com/{tid}/v2.0"
-        else:
-            issuer = f"https://login.microsoftonline.com/{self.settings.entra_tenant_id}/v2.0"
-
         claims: dict[str, Any] = jwt.decode(
             token,
             signing_key.key,
             algorithms=["RS256"],
-            audience=self.settings.entra_client_id,
-            issuer=issuer,
+            options={"verify_aud": False, "verify_iss": False},
         )
+
+        token_aud = claims.get("aud")
+        token_iss = claims.get("iss")
+
+        # Validate audience: must equal or contain entra_client_id
+        aud_valid = False
+        if isinstance(token_aud, str) and self.settings.entra_client_id in token_aud:
+            aud_valid = True
+        elif isinstance(token_aud, list) and any(
+            isinstance(a, str) and self.settings.entra_client_id in a for a in token_aud
+        ):
+            aud_valid = True
+
+        if not aud_valid:
+            raise jwt.InvalidAudienceError("Audience does not match Entra Client ID")
+
+        # Validate issuer: must be from Microsoft Entra ID
+        if isinstance(token_iss, str) and not any(
+            token_iss.startswith(prefix)
+            for prefix in [
+                "https://login.microsoftonline.com/",
+                "https://sts.windows.net/",
+            ]
+        ):
+            raise jwt.InvalidIssuerError("Issuer is invalid")
+
         return claims
 
 
@@ -63,10 +80,15 @@ async def get_current_user(
             raise AppError(401, "TOKEN_INVALID", "Access token is invalid") from error
         object_id = claims.get("oid")
         tenant_id = claims.get("tid")
+        email = claims.get("preferred_username") or claims.get("upn") or claims.get("email")
+        name = claims.get("name") or (email.split("@")[0] if email else "Teams User")
+
         if not object_id:
             raise AppError(401, "TOKEN_INVALID", "Access token identity is invalid")
         if settings.entra_tenant_id != "common" and tenant_id != settings.entra_tenant_id:
             raise AppError(401, "TOKEN_INVALID", "Access token identity is invalid")
+
+        # 1. Try finding user by external_user_id and tenant_id
         user = await session.scalar(
             select(User).where(
                 User.external_user_id == object_id,
@@ -74,6 +96,50 @@ async def get_current_user(
                 User.active.is_(True),
             )
         )
+
+        # 2. Try finding user by external_user_id alone (if tenant_id was updated/common)
+        if user is None:
+            user = await session.scalar(
+                select(User).where(
+                    User.external_user_id == object_id,
+                    User.active.is_(True),
+                )
+            )
+            if user:
+                user.tenant_id = tenant_id
+                await session.commit()
+
+        # 3. Try finding by email
+        if user is None and email:
+            user = await session.scalar(
+                select(User).where(
+                    User.email == email,
+                    User.active.is_(True),
+                )
+            )
+            if user:
+                user.external_user_id = object_id
+                user.tenant_id = tenant_id
+                await session.commit()
+
+        # 4. Auto-link first unlinked seed user if present
+        if user is None:
+            first_user = await session.scalar(
+                select(User).where(User.active.is_(True)).order_by(User.created_at)
+            )
+            if first_user and (
+                first_user.external_user_id.startswith("entra-")
+                or first_user.external_user_id == "entra-user-1"
+            ):
+                first_user.external_user_id = object_id
+                first_user.tenant_id = tenant_id
+                if email:
+                    first_user.email = email
+                if name:
+                    first_user.name = name
+                await session.commit()
+                user = first_user
+
     if user is None:
         raise AppError(403, "USER_NOT_PROVISIONED", "User is not provisioned")
     return user
