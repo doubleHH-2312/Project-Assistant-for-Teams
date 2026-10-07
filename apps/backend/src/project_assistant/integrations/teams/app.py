@@ -16,6 +16,7 @@ from microsoft_teams.apps import (  # type: ignore[import-untyped]
 from microsoft_teams.cards import AdaptiveCard
 
 from project_assistant.core.config import Settings
+from project_assistant.integrations.llm.provider import LLMProvider
 from project_assistant.modules.actions.contracts import ActionContext, ActionResult
 from project_assistant.modules.actions.parser import ParsedCommand, parse_command
 
@@ -32,9 +33,7 @@ class ActionDispatcherProtocol(Protocol):
 
 
 class ContextResolverProtocol(Protocol):
-    async def resolve(
-        self, activity: MessageActivity, action: str
-    ) -> ActionContext: ...
+    async def resolve(self, activity: MessageActivity, action: str) -> ActionContext: ...
 
 
 class InstallationRecorderProtocol(Protocol):
@@ -46,25 +45,30 @@ class TeamsMessageProcessor:
         self,
         dispatcher: ActionDispatcherProtocol,
         context_resolver: ContextResolverProtocol,
+        llm_provider: LLMProvider,
     ) -> None:
         self.dispatcher = dispatcher
         self.context_resolver = context_resolver
+        self.llm_provider = llm_provider
 
     async def process(
         self, activity: MessageActivity, bot_mention_text: str | None
     ) -> TeamsPresentation | None:
         command = parse_command(activity.text or "", bot_mention_text)
         if command is None:
-            return None
+            user_message = activity.text or ""
+            if bot_mention_text and user_message.startswith(bot_mention_text):
+                user_message = user_message[len(bot_mention_text) :].strip()
+            if not user_message:
+                return None
+            reply = await self.llm_provider.chat(user_message)
+            return TeamsPresentation(shared_text=reply, private_card={})
+
         context = await self.context_resolver.resolve(activity, command.name)
-        result = await self.dispatcher.dispatch(
-            command, context, _payload_from_arguments(command)
-        )
+        result = await self.dispatcher.dispatch(command, context, _payload_from_arguments(command))
         return present_action_result(result, context.conversation_type)
 
-    async def process_card(
-        self, activity: AdaptiveCardInvokeActivity
-    ) -> TeamsPresentation:
+    async def process_card(self, activity: AdaptiveCardInvokeActivity) -> TeamsPresentation:
         action = activity.value.action
         data = dict(action.data)
         command_name = str(data.pop("action", action.verb or "")).removeprefix("/")
@@ -82,6 +86,7 @@ def create_teams_app(
     fastapi_app: FastAPI,
     settings: Settings,
     dispatcher: ActionDispatcherProtocol,
+    llm_provider: "LLMProvider",
     *,
     context_resolver: ContextResolverProtocol,
     installation_recorder: InstallationRecorderProtocol | None = None,
@@ -98,14 +103,14 @@ def create_teams_app(
     if settings.entra_tenant_id and settings.entra_tenant_id != "common":
         options["tenant_id"] = settings.entra_tenant_id
     teams_app = App(**options)
-    processor = TeamsMessageProcessor(dispatcher, context_resolver)
+    processor = TeamsMessageProcessor(dispatcher, context_resolver, llm_provider)
 
     @teams_app.on_message  # type: ignore[untyped-decorator]
     async def on_message(ctx: ActivityContext[MessageActivity]) -> None:
         mention_text = _bot_mention_text(ctx.activity)
         presentation = await processor.process(ctx.activity, mention_text)
         if presentation is not None:
-            if _is_personal(ctx.activity):
+            if _is_personal(ctx.activity) and presentation.private_card:
                 await ctx.send(AdaptiveCard.model_validate(presentation.private_card))
             else:
                 await ctx.send(presentation.shared_text)

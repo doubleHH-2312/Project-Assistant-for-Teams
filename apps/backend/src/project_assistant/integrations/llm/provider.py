@@ -19,6 +19,8 @@ class LLMProvider(Protocol):
         self, template: dict[str, Any], evidence: list[dict[str, Any]]
     ) -> LLMResult: ...
 
+    async def chat(self, user_message: str) -> str: ...
+
 
 class LLMProviderError(Exception):
     def __init__(self, code: str, message: str) -> None:
@@ -44,6 +46,9 @@ class MockLLMProvider:
             provider="mock",
             metadata={"mode": "mock", "evidenceCount": len(evidence)},
         )
+
+    async def chat(self, user_message: str) -> str:
+        return f"Mock reply to: {user_message}"
 
     @staticmethod
     def _legacy_content(evidence: list[dict[str, Any]]) -> dict[str, Any]:
@@ -306,6 +311,54 @@ class OpenAICompatibleLLMProvider:
                         "LLM_REQUEST_REJECTED", "The LLM endpoint rejected the request"
                     )
                 return self._parse_response(response, attempt)
+        raise LLMProviderError("LLM_UNAVAILABLE", "The LLM endpoint is unavailable")
+
+    async def chat(self, user_message: str) -> str:
+        payload: dict[str, Any] = {
+            "model": self.model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a helpful project assistant bot in Microsoft Teams."
+                        " Answer the user's question clearly and concisely."
+                    ),
+                },
+                {"role": "user", "content": user_message},
+            ],
+        }
+        async with httpx.AsyncClient(
+            timeout=self.timeout_seconds,
+            transport=self._transport,
+        ) as client:
+            for attempt in range(1, self.max_attempts + 1):
+                try:
+                    response = await client.post(
+                        f"{self.base_url}/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {self._api_key}",
+                            "Content-Type": "application/json",
+                        },
+                        json=payload,
+                    )
+                except (httpx.TimeoutException, httpx.TransportError) as error:
+                    if attempt < self.max_attempts:
+                        continue
+                    raise LLMProviderError(
+                        "LLM_UNAVAILABLE", "The LLM endpoint is unavailable"
+                    ) from error
+                if response.status_code == 429 or response.status_code >= 500:
+                    if attempt < self.max_attempts:
+                        continue
+                    raise LLMProviderError(
+                        "LLM_UNAVAILABLE", "The LLM endpoint is unavailable"
+                    )
+                if response.status_code >= 400:
+                    raise LLMProviderError(
+                        "LLM_REQUEST_REJECTED", "The LLM endpoint rejected the request"
+                    )
+                body = response.json()
+                return str(body["choices"][0]["message"]["content"])
         raise LLMProviderError("LLM_UNAVAILABLE", "The LLM endpoint is unavailable")
 
     def _parse_response(self, response: httpx.Response, attempt: int) -> LLMResult:

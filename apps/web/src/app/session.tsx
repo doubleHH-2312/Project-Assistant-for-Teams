@@ -27,14 +27,42 @@ export function SessionBoundary({
 }: SessionBoundaryProps) {
   const [userId, setUserId] = useState("user-member-1");
   const [teamId, setTeamId] = useState("");
+  const [token, setToken] = useState<string | undefined>();
+  const [isTeamsInit, setIsTeamsInit] = useState(import.meta.env.VITE_AUTH_MODE !== "entra");
+
+  useEffect(() => {
+    if (import.meta.env.VITE_AUTH_MODE !== "entra") {
+      return;
+    }
+    import("@microsoft/teams-js").then(({ app, authentication }) => {
+      app.initialize().then(() => {
+        app.getContext().then((context) => {
+          if (context?.user?.id) {
+            setUserId(context.user.id);
+          }
+          authentication.getAuthToken().then((t) => {
+            setToken(t);
+            setIsTeamsInit(true);
+          }).catch((e) => {
+            console.error("Failed to get Teams auth token", e);
+            setIsTeamsInit(true);
+          });
+        });
+      }).catch(() => {
+        setIsTeamsInit(true);
+      });
+    });
+  }, []);
+
   const client = useMemo(
-    () => new ProjectAssistantClient(apiUrl, userId),
-    [userId],
+    () => new ProjectAssistantClient(apiUrl, userId, token),
+    [userId, token],
   );
   const query = useQuery({
-    queryKey: ["session", userId],
+    queryKey: ["session", userId, token],
     queryFn: () => client.getSession(),
     retry: false,
+    enabled: isTeamsInit,
   });
 
   useEffect(() => {

@@ -7,6 +7,7 @@ from microsoft_teams.apps import App
 from pydantic import ValidationError
 
 from project_assistant.core.config import Settings
+from project_assistant.integrations.llm.provider import MockLLMProvider
 from project_assistant.modules.actions.contracts import (
     ActionContext,
     ActionResult,
@@ -79,6 +80,7 @@ async def test_sdk_app_registers_messages_endpoint_once() -> None:
         fastapi_app,
         settings,
         Dispatcher(),  # type: ignore[arg-type]
+        MockLLMProvider(),
         context_resolver=Resolver(),
     )
 
@@ -98,7 +100,7 @@ async def test_message_processor_dispatches_commands_and_ignores_ordinary_text()
     module = _teams_app_module()
     resolver = Resolver()
     dispatcher = Dispatcher()
-    processor = module.TeamsMessageProcessor(dispatcher, resolver)
+    processor = module.TeamsMessageProcessor(dispatcher, resolver, MockLLMProvider())
 
     ordinary = await processor.process(_activity("hello team"), None)
     command = await processor.process(
@@ -106,7 +108,8 @@ async def test_message_processor_dispatches_commands_and_ignores_ordinary_text()
         "<at>Project Assistant</at>",
     )
 
-    assert ordinary is None
+    assert ordinary is not None
+    assert "hello team" in ordinary.shared_text
     assert resolver.calls == 1
     assert [item[0].name for item in dispatcher.commands] == ["daily"]
     assert command is not None

@@ -66,6 +66,7 @@ def create_app() -> FastAPI:
     app.include_router(weekly_report_router, prefix=settings.api_prefix)
     app.include_router(publication_router, prefix=settings.api_prefix)
     if settings.teams_transport == "sdk":
+        from project_assistant.integrations.llm.factory import build_llm_provider
         from project_assistant.integrations.teams.app import create_teams_app
         from project_assistant.integrations.teams.runtime import (
             SessionScopedActionDispatcher,
@@ -77,6 +78,7 @@ def create_app() -> FastAPI:
             app,
             settings,
             SessionScopedActionDispatcher(SessionFactory, settings),
+            build_llm_provider(settings),
             context_resolver=SessionScopedTeamsContextResolver(SessionFactory),
             installation_recorder=SessionScopedInstallationRecorder(SessionFactory),
         )
