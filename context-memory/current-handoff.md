@@ -47,11 +47,7 @@
 
 ## Next action
 
-Choose one real integration gate to open. For Teams, configure Azure Bot endpoint
-`/api/messages`, package with the real app UUID/hostname, sideload, then execute the
-personal/group/channel checklist in `docs/runbooks/teams-sideload.md`. For cloud demo,
-follow `docs/runbooks/vercel-supabase.md` and migrate before deploying application code.
+1. Azure App Registration `f3ab6a30-1e75-4c22-9974-87c58049ac5a` has been verified via Azure CLI (`identifierUris`, `access_as_user` scope, and pre-authorized Teams client IDs are active).
+2. Upload/update `dist/project-assistant-teams.zip` in Teams to apply the updated manifest with `webApplicationInfo`.
+3. Verify Bot Messaging Endpoint in Azure/Teams Developer Portal points to `https://project-assistant-for-teams.vercel.app/api/messages`.
 
-Temporary Docker volumes used for repeatable clean E2E runs were intentionally left
-untouched to avoid destructive cleanup; they can be removed later after confirming no
-debug evidence is needed.
