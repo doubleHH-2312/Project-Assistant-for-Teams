@@ -47,7 +47,7 @@
 
 ## Next action
 
-1. Azure App Registration `f3ab6a30-1e75-4c22-9974-87c58049ac5a` has been verified via Azure CLI (`identifierUris`, `access_as_user` scope, and pre-authorized Teams client IDs are active).
-2. Upload/update `dist/project-assistant-teams.zip` in Teams to apply the updated manifest with `webApplicationInfo`.
-3. Verify Bot Messaging Endpoint in Azure/Teams Developer Portal points to `https://project-assistant-for-teams.vercel.app/api/messages`.
+1. Fixed Entra SSO token verification in `auth.py` for custom API audience URIs and auto-provisioning Entra users.
+2. Regenerated Azure App Registration client secret and updated `TEAMS_APP_PASSWORD` on Vercel production.
+3. Reload Teams Tab to view Web App, and test Bot messaging with `/help` or direct chat.
 

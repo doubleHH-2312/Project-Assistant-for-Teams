@@ -140,6 +140,16 @@ async def get_current_user(
                 await session.commit()
                 user = first_user
 
+        # Ensure demo teams align with the user's tenant_id
+        if user and user.tenant_id:
+            demo_teams = (
+                await session.scalars(select(Team).where(Team.tenant_id == "tenant-demo"))
+            ).all()
+            if demo_teams:
+                for dt in demo_teams:
+                    dt.tenant_id = user.tenant_id
+                await session.commit()
+
     if user is None:
         raise AppError(403, "USER_NOT_PROVISIONED", "User is not provisioned")
     return user

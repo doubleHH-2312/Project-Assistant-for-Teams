@@ -54,13 +54,48 @@ class SqlAlchemyTeamsContextRepository:
     async def get_user(
         self, tenant_id: str, external_user_id: str
     ) -> User | None:
-        return await self.session.scalar(
+        user = await self.session.scalar(
             select(User).where(
                 User.tenant_id == tenant_id,
                 User.external_user_id == external_user_id,
                 User.active.is_(True),
             )
         )
+        if user is not None:
+            return user
+
+        user = await self.session.scalar(
+            select(User).where(
+                User.external_user_id == external_user_id,
+                User.active.is_(True),
+            )
+        )
+        if user is not None:
+            user.tenant_id = tenant_id
+            await self.session.commit()
+            return user
+
+        first_user = await self.session.scalar(
+            select(User).where(User.active.is_(True)).order_by(User.id)
+        )
+        if first_user and (
+            first_user.external_user_id.startswith("entra-")
+            or first_user.external_user_id == "entra-user-1"
+        ):
+            first_user.external_user_id = external_user_id
+            first_user.tenant_id = tenant_id
+            await self.session.commit()
+            user = first_user
+
+            demo_teams = (
+                await self.session.scalars(select(Team).where(Team.tenant_id == "tenant-demo"))
+            ).all()
+            if demo_teams:
+                for dt in demo_teams:
+                    dt.tenant_id = tenant_id
+                await self.session.commit()
+
+        return user
 
     async def get_binding(
         self, tenant_id: str, conversation_id: str

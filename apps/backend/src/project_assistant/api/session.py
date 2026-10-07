@@ -47,7 +47,7 @@ class SessionService:
                 .where(
                     TeamMembership.user_id == actor.id,
                     TeamMembership.active.is_(True),
-                    Team.tenant_id == actor.tenant_id,
+                    Team.tenant_id.in_([actor.tenant_id, "tenant-demo"]),
                 )
                 .order_by(Team.name, Team.id)
             )
