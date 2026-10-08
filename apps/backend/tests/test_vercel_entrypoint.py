@@ -1,7 +1,11 @@
 import importlib
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 
+from dotenv import dotenv_values
 from fastapi import FastAPI
 
 
@@ -34,3 +38,17 @@ def test_local_demo_migrates_before_seed_without_startup_schema_mutation() -> No
     assert makefile.index(migrate) < makefile.index(seed)
     assert "COPY apps/backend/alembic " in dockerfile
     assert "await create_schema()" not in main_module
+
+
+def test_local_demo_example_environment_starts_api_process() -> None:
+    example_environment = {key: value or "" for key, value in dotenv_values(".env.example").items()}
+
+    result = subprocess.run(
+        [sys.executable, "-c", "import project_assistant.main"],
+        env={**os.environ, **example_environment},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr

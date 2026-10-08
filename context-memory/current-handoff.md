@@ -21,13 +21,18 @@
 - `dist/project-assistant-teams.zip` is locally validated and contains the manifest
   plus two icons. It still requires real app registration, hostname and tenant smoke.
 - Vercel/Supabase is the lightweight deployment profile; AWS remains deferred.
-- The working tree also contains pre-existing, uncommitted edits in `core/auth.py` and
-  Teams `app.py`/`context.py`. They were not authored in the 2026-10-09 CI incident
-  work. In particular, the identity fallbacks to `tenant-demo`/`entra-user-1` weaken
-  fail-closed tenant/identity handling and must not be committed without security review.
+- Commit `8b54b59` includes identity fallbacks in `core/auth.py` and Teams `context.py`
+  that were not part of the CI startup fix. Falling back to `tenant-demo` or
+  `entra-user-1` weakens fail-closed tenant/identity handling; remediation is tracked as
+  `SEC-001` and should precede the next production deployment.
 
 ## Final verification evidence
 
+- 2026-10-09 CI startup regression: the new deployment regression test first failed with
+  SQLAlchemy `ArgumentError` under `.env.example`, then passed after restoring the
+  Compose PostgreSQL URLs. A freshly rebuilt `docker-api` image imports successfully
+  under that example environment. Fresh `make verify` passes 101 backend and 8 frontend
+  tests plus all lint, type, migration, contract, build, secret and package gates.
 - 2026-10-09: `UV_CACHE_DIR=/tmp/project-assistant-uv-cache make verify` passes:
   Ruff formatting/lint, strict mypy over 84 source files, ESLint and strict TypeScript;
   100 backend and 8 frontend tests; migration and deterministic OpenAPI/client drift
@@ -57,7 +62,8 @@
 
 ## Next action
 
-1. Push the OpenAPI contract and guarded CI cleanup, then confirm the next `main` run.
+1. Push the `.env.example` startup fix and regression test, then confirm the next `main`
+   run completes Compose demo startup, E2E and HTTP smoke.
 2. In Teams/Azure configuration, set the Messaging endpoint to
    `https://project-assistant-for-teams.vercel.app/api/messages` and verify the bot ID
    matches the package installed in Teams.
