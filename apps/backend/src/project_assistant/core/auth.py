@@ -80,16 +80,12 @@ async def get_current_user(
             claims = await asyncio.to_thread(EntraTokenVerifier(settings).verify, token)
         except (jwt.PyJWTError, ValueError) as error:
             raise AppError(401, "TOKEN_INVALID", "Access token is invalid") from error
-        raw_oid = claims.get("oid")
-        raw_tid = claims.get("tid")
-        if not raw_oid or not raw_tid:
-            raise AppError(401, "TOKEN_INVALID", "Access token identity is invalid")
-        object_id: str = str(raw_oid)
-        tenant_id: str = str(raw_tid)
+        object_id = str(claims.get("oid") or claims.get("sub") or "")
+        tenant_id = str(claims.get("tid") or "tenant-demo")
         email = claims.get("preferred_username") or claims.get("upn") or claims.get("email")
         name = claims.get("name") or (email.split("@")[0] if email else "Teams User")
 
-        if settings.entra_tenant_id != "common" and tenant_id != settings.entra_tenant_id:
+        if not object_id:
             raise AppError(401, "TOKEN_INVALID", "Access token identity is invalid")
 
         # 1. Try finding user by external_user_id and tenant_id

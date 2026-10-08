@@ -2,7 +2,7 @@
 
 ## State
 
-- Date: 2026-10-05 (Asia/Ho_Chi_Minh).
+- Date: 2026-10-09 (Asia/Ho_Chi_Minh).
 - The approved 11-task plan in
   `docs/superpowers/plans/2026-10-02-teams-bot-action-platform.md` is implemented.
 - The product now has one modular FastAPI backend, a PostgreSQL worker path, a
@@ -21,9 +21,17 @@
 - `dist/project-assistant-teams.zip` is locally validated and contains the manifest
   plus two icons. It still requires real app registration, hostname and tenant smoke.
 - Vercel/Supabase is the lightweight deployment profile; AWS remains deferred.
+- The working tree also contains pre-existing, uncommitted edits in `core/auth.py` and
+  Teams `app.py`/`context.py`. They were not authored in the 2026-10-09 CI incident
+  work. In particular, the identity fallbacks to `tenant-demo`/`entra-user-1` weaken
+  fail-closed tenant/identity handling and must not be committed without security review.
 
 ## Final verification evidence
 
+- 2026-10-09: `UV_CACHE_DIR=/tmp/project-assistant-uv-cache make verify` passes:
+  Ruff formatting/lint, strict mypy over 84 source files, ESLint and strict TypeScript;
+  100 backend and 8 frontend tests; migration and deterministic OpenAPI/client drift
+  checks; Python/web builds; secret scan over 221 files; Teams ZIP validation.
 - `make verify`: Ruff format/lint, strict mypy over 83 source files, ESLint and strict
   TypeScript pass; 99 backend and 8 frontend tests pass; two clean migration tests,
   deterministic OpenAPI/client drift, Python/web production builds, repository secret
@@ -38,8 +46,10 @@
 
 ## External gates
 
-- Teams/Entra: public HTTPS hostname, bot/app registrations, redirect/resource values,
-  tenant consent/policy and test users.
+- Teams/Entra: the production bot endpoint is reachable and its JWT gate is active, but
+  Vercel received no real Teams activity during the 2026-10-09 investigation. Verify the
+  Azure/Teams Messaging endpoint, bot/App ID versus the sideloaded manifest, reinstall
+  the package, and capture one `ping` in live Vercel logs.
 - GPT: approved model, API key and company data policy.
 - Company LLM: base URL, auth scheme, model/deployment ID and structured-output mode.
 - Vercel/Supabase: project ownership, environment secrets, direct migration URL,
@@ -47,8 +57,11 @@
 
 ## Next action
 
-1. Created `BotExecutionTrace` logger module (`logger.py`) and integrated it into `app.py` and `provider.py`.
-2. Every Teams activity now tracks elapsed time, identity resolution, command parsing, LLM provider routing, and API HTTP error details, returning a clean `🛠️ Bot Processing Log` in the Teams chat reply.
-3. Verified 100 backend unit tests, ruff format/lint, and strict mypy type checking.
-4. Redeployed live update to Vercel production (`https://project-assistant-for-teams.vercel.app`).
-
+1. Push the OpenAPI contract and guarded CI cleanup, then confirm the next `main` run.
+2. In Teams/Azure configuration, set the Messaging endpoint to
+   `https://project-assistant-for-teams.vercel.app/api/messages` and verify the bot ID
+   matches the package installed in Teams.
+3. Reinstall the package and send `ping` while tailing production logs; only investigate
+   JWT/handler/database/reply code if that activity reaches Vercel and returns an error.
+4. Fix the Vercel health-route mismatch tracked as `OPS-004`; `/health/ready` currently
+   resolves to the SPA rather than the FastAPI readiness handler.

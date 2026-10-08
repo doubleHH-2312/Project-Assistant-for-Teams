@@ -45,4 +45,7 @@ jobs:
           make smoke
       - name: Stop demo
         if: always()
-        run: make down
+        run: |
+          if [ -f .env ]; then
+            make down
+          fi
