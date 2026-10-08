@@ -28,9 +28,20 @@
   that were not part of the CI startup fix. Falling back to `tenant-demo` or
   `entra-user-1` weakens fail-closed tenant/identity handling; remediation is tracked as
   `SEC-001` and should precede the next production deployment.
+- The replacement Teams bot credentials are valid and the production endpoint is live.
+  Locally, the SDK now receives the configured single-tenant ID instead of silently
+  assuming a multi-tenant bot; production deployment remains pending behind `SEC-001`.
 
 ## Final verification evidence
 
+- 2026-10-09 Teams single-tenant SDK fix: RED regression observed
+  `teams_app.options.tenant_id is None` plus skipped issuer validation. GREEN passes
+  after mapping `ENTRA_TENANT_ID` into the SDK. Fresh
+  `UV_CACHE_DIR=/tmp/project-assistant-uv-cache make verify` passes Ruff/ESLint,
+  strict mypy/TypeScript, 102 backend and 11 frontend tests, migrations,
+  OpenAPI/client drift, Python/web builds, secret scan over 224 files, and Teams ZIP
+  validation. Microsoft client-credential validation returned HTTP 200; unsigned
+  production `/api/messages` remains correctly rejected with 401.
 - 2026-10-09 CI prevention rules: confirmed the rulebook and PR template exist, every
   documented Make target is present, cross-file references resolve, and
   `git diff --check` passes. This was a prose/process-only change, so application tests
@@ -63,10 +74,10 @@
 
 ## External gates
 
-- Teams/Entra: the production bot endpoint is reachable and its JWT gate is active, but
-  Vercel received no real Teams activity during the 2026-10-09 investigation. Verify the
-  Azure/Teams Messaging endpoint, bot/App ID versus the sideloaded manifest, reinstall
-  the package, and capture one `ping` in live Vercel logs.
+- Teams/Entra: replacement bot credentials are valid and the production endpoint/JWT
+  gate are active. The single-tenant SDK fix is verified locally but not deployed;
+  after `SEC-001`, deploy it, sideload the replacement app package, and capture one
+  real `ping` in Vercel logs.
 - GPT: approved model, API key and company data policy.
 - Company LLM: base URL, auth scheme, model/deployment ID and structured-output mode.
 - Vercel/Supabase: project ownership, environment secrets, direct migration URL,
@@ -76,10 +87,10 @@
 
 1. Configure GitHub `main` branch protection to require `CI / verify`, an up-to-date
    branch, and at least one approval without administrator bypass.
-2. In Teams/Azure configuration, set the Messaging endpoint to
-   `https://project-assistant-for-teams.vercel.app/api/messages` and verify the bot ID
-   matches the package installed in Teams.
-3. Reinstall the package and send `ping` while tailing production logs; only investigate
-   JWT/handler/database/reply code if that activity reaches Vercel and returns an error.
+2. Complete `SEC-001`, then deploy the verified Teams single-tenant SDK configuration
+   and confirm production logs no longer report a missing tenant or skipped issuer.
+3. Sideload the replacement package and send `ping` while tailing production logs; only
+   investigate JWT/handler/database/reply code if that activity reaches Vercel and
+   returns an error.
 4. Fix the Vercel health-route mismatch tracked as `OPS-004`; `/health/ready` currently
    resolves to the SPA rather than the FastAPI readiness handler.

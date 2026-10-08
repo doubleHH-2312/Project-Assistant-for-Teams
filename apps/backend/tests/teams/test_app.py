@@ -95,6 +95,27 @@ async def test_sdk_app_registers_messages_endpoint_once() -> None:
     assert teams_app.options.dangerously_allow_unauthenticated_requests is True
 
 
+def test_sdk_app_uses_configured_tenant_for_single_tenant_auth() -> None:
+    module = _teams_app_module()
+    settings = Settings(
+        app_env="test",
+        dev_auth_enabled=True,
+        entra_tenant_id="tenant-1",
+        teams_transport="sdk",
+        teams_skip_auth=True,
+    )
+
+    teams_app = module.create_teams_app(
+        FastAPI(),
+        settings,
+        Dispatcher(),  # type: ignore[arg-type]
+        MockLLMProvider(),
+        context_resolver=Resolver(),
+    )
+
+    assert teams_app.options.tenant_id == "tenant-1"
+
+
 @pytest.mark.asyncio
 async def test_message_processor_dispatches_commands_and_ignores_ordinary_text() -> None:
     module = _teams_app_module()
