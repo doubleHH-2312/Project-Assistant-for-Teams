@@ -212,3 +212,18 @@ Append new decisions. Do not rewrite existing records; add a superseding record.
 - Impact: Backend images include Alembic files; `make demo` migrates before seed;
   migration `0008` adds the missing Membership timestamp default; Daily persistence
   has a foreign-key-order regression test and retains stable audit IDs after rollback.
+
+## 2026-10-09 — D-023 Layer CI prevention rules across authoring and review
+
+- Decision: Keep detailed CI prevention policy in `docs/engineering/ci-rules.md`, make
+  compliance mandatory for coding agents through the root `AGENTS.md`, and require
+  human authors/reviewers to acknowledge applicable gates through the pull-request
+  template. `make verify` is the baseline for non-documentation changes; a change-type
+  matrix adds clean migration, generated-contract, browser, container, and smoke gates.
+- Reason: The main-branch incident crossed several independent surfaces—generated
+  OpenAPI, example environment configuration, partial cleanup, Team-local dates, and
+  persistent E2E state. A single remembered command or CI-only check did not prevent
+  those regressions before push.
+- Impact: Future work has one versioned rulebook and two enforcement entry points.
+  GitHub branch protection remains an explicit repository-administrator setting and
+  should require the `CI / verify` check plus review rather than relying on convention.

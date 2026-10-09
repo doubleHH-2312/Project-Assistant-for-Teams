@@ -64,10 +64,25 @@ skill instructions overlap with project-specific rules.
 
 ## Verification and delivery
 
+- Read and follow `docs/engineering/ci-rules.md` before changing application,
+  infrastructure, dependency, generated, or CI files. Its change matrix defines the
+  minimum evidence required for each affected surface.
+- Never weaken, skip, or conditionally ignore a repository gate to make CI pass. Fix
+  the first root failure and rerun every downstream gate it prevented.
+- `make verify` must be run fresh after the final non-documentation change. Changes to
+  `.env.example`, Docker, the Makefile, CI, date/time behavior, migrations, or browser
+  workflows also require the clean acceptance commands specified in the CI rules.
+- API contract changes must include inspected OpenAPI and generated-client updates;
+  date-only values must come from the configured Team timezone rather than UTC or host
+  local time.
+- Before handoff, inspect `git status --short`, `git diff --check`, and the complete
+  diff. Record the actual commands and results; do not report an unexecuted gate as
+  passing.
 - New behavior follows RED -> GREEN -> REFACTOR. Record the failing and passing
   command output; configuration and prose-only changes do not require tests.
 - On an unexpected failure, use the systematic debugging workflow before changing
   production code.
-- Before any completion claim, run fresh full verification and read the output.
+- Before any completion claim, run the fresh verification required by the CI change
+  matrix and read the output.
 - Review the complete Git diff for scope, security, migrations, API contracts,
   accessibility, and accidental files before handoff.

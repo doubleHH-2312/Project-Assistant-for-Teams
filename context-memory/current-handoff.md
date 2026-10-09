@@ -21,6 +21,9 @@
 - `dist/project-assistant-teams.zip` is locally validated and contains the manifest
   plus two icons. It still requires real app registration, hostname and tenant smoke.
 - Vercel/Supabase is the lightweight deployment profile; AWS remains deferred.
+- CI prevention policy is versioned in `docs/engineering/ci-rules.md`, enforced for
+  coding agents by the root `AGENTS.md`, and surfaced to human reviewers through the
+  pull-request template. The change matrix defines the minimum verification by surface.
 - Commit `8b54b59` includes identity fallbacks in `core/auth.py` and Teams `context.py`
   that were not part of the CI startup fix. Falling back to `tenant-demo` or
   `entra-user-1` weakens fail-closed tenant/identity handling; remediation is tracked as
@@ -28,6 +31,10 @@
 
 ## Final verification evidence
 
+- 2026-10-09 CI prevention rules: confirmed the rulebook and PR template exist, every
+  documented Make target is present, cross-file references resolve, and
+  `git diff --check` passes. This was a prose/process-only change, so application tests
+  were not rerun.
 - 2026-10-09 CI regression: OpenAPI drift, cleanup without `.env`, and blank Compose
   database URLs were fixed first. The later browser failure was traced to calendar
   defaults mixing UTC, host-local time, and the configured Team timezone. RED evidence
@@ -67,8 +74,8 @@
 
 ## Next action
 
-1. Push the CI and Team-calendar fixes, then confirm the next `main` run completes
-   Compose demo startup, E2E, and HTTP smoke.
+1. Configure GitHub `main` branch protection to require `CI / verify`, an up-to-date
+   branch, and at least one approval without administrator bypass.
 2. In Teams/Azure configuration, set the Messaging endpoint to
    `https://project-assistant-for-teams.vercel.app/api/messages` and verify the bot ID
    matches the package installed in Teams.
