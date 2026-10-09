@@ -16,7 +16,7 @@
 - GPT and the company model share one OpenAI-compatible adapter. Local/CI uses the
   deterministic mock and never claims a real-provider result.
 - The standalone demo is available at `http://localhost:5173` while Compose is
-  running. The current release-final database is migrated through `0008`, seeded, and
+  running. The current clean E2E database is migrated through `0008`, seeded, and
   contains the final E2E run's mock data.
 - `dist/project-assistant-teams.zip` is locally validated and contains the manifest
   plus two icons. It still requires real app registration, hostname and tenant smoke.
@@ -28,11 +28,16 @@
 
 ## Final verification evidence
 
-- 2026-10-09 CI startup regression: the new deployment regression test first failed with
-  SQLAlchemy `ArgumentError` under `.env.example`, then passed after restoring the
-  Compose PostgreSQL URLs. A freshly rebuilt `docker-api` image imports successfully
-  under that example environment. Fresh `make verify` passes 101 backend and 8 frontend
-  tests plus all lint, type, migration, contract, build, secret and package gates.
+- 2026-10-09 CI regression: OpenAPI drift, cleanup without `.env`, and blank Compose
+  database URLs were fixed first. The later browser failure was traced to calendar
+  defaults mixing UTC, host-local time, and the configured Team timezone. RED evidence
+  covered Daily (`2026-10-08` instead of `2026-10-09`), History excluding the saved
+  report, Weekly selecting Sunday `2026-10-04` instead of Monday `2026-10-05`, and
+  Overview requesting the prior UTC date. All four surfaces now use one Team-calendar
+  utility. A fresh-volume Compose demo migrated and seeded successfully; Playwright
+  passed 4/4 and the HTTP smoke passed. Fresh `make verify` passes 101 backend and 11
+  frontend tests plus all lint, type, migration, OpenAPI/client drift, build,
+  secret-scan, and package gates.
 - 2026-10-09: `UV_CACHE_DIR=/tmp/project-assistant-uv-cache make verify` passes:
   Ruff formatting/lint, strict mypy over 84 source files, ESLint and strict TypeScript;
   100 backend and 8 frontend tests; migration and deterministic OpenAPI/client drift
@@ -62,8 +67,8 @@
 
 ## Next action
 
-1. Push the `.env.example` startup fix and regression test, then confirm the next `main`
-   run completes Compose demo startup, E2E and HTTP smoke.
+1. Push the CI and Team-calendar fixes, then confirm the next `main` run completes
+   Compose demo startup, E2E, and HTTP smoke.
 2. In Teams/Azure configuration, set the Messaging endpoint to
    `https://project-assistant-for-teams.vercel.app/api/messages` and verify the bot ID
    matches the package installed in Teams.

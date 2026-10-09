@@ -3,14 +3,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { DailyReportInput, WorkStatus } from "@project-assistant/api-client";
 import { useMemo, useState, type FormEvent } from "react";
 import { useSession } from "../../app/session-context";
+import { todayInTimeZone } from "../../app/team-calendar";
 import { AsyncState } from "../../components/AsyncState";
 
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export function DailyPage() {
-  const { client, teamId } = useSession();
+  const { client, team, teamId } = useSession();
   const queryClient = useQueryClient();
   const [saved, setSaved] = useState("");
   const options = useQuery({
@@ -82,7 +79,13 @@ export function DailyPage() {
         </label>
         <label className="field">
           <span>Report date</span>
-          <input name="reportDate" type="date" defaultValue={today()} required />
+          <input
+            key={teamId}
+            name="reportDate"
+            type="date"
+            defaultValue={todayInTimeZone(team.timezone)}
+            required
+          />
         </label>
         <label className="field">
           <span>Status</span>

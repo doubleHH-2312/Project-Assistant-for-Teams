@@ -2,18 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import type { WorkStatus } from "@project-assistant/api-client";
 import { useSession } from "../../app/session-context";
+import { daysAgoInTimeZone } from "../../app/team-calendar";
 import { AsyncState } from "../../components/AsyncState";
 
-function daysAgo(days: number): string {
-  const value = new Date();
-  value.setDate(value.getDate() - days);
-  return value.toISOString().slice(0, 10);
-}
-
 export function HistoryPage() {
-  const { client, teamId } = useSession();
-  const [dateFrom, setDateFrom] = useState(daysAgo(30));
-  const [dateTo, setDateTo] = useState(daysAgo(0));
+  const { client, team, teamId } = useSession();
+  const [dateFrom, setDateFrom] = useState(() => daysAgoInTimeZone(30, team.timezone));
+  const [dateTo, setDateTo] = useState(() => daysAgoInTimeZone(0, team.timezone));
   const [status, setStatus] = useState<WorkStatus | "">("");
   const query = useQuery({
     queryKey: ["daily-history", teamId, dateFrom, dateTo, status],

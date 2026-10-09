@@ -1,15 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useSession } from "../../app/session-context";
+import { todayInTimeZone } from "../../app/team-calendar";
 import { AsyncState } from "../../components/AsyncState";
 
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export function OverviewPage() {
-  const { client, teamId } = useSession();
-  const [reportingDate, setReportingDate] = useState(today());
+  const { client, team, teamId } = useSession();
+  const [reportingDate, setReportingDate] = useState(() => todayInTimeZone(team.timezone));
   const query = useQuery({
     queryKey: ["overview", teamId, reportingDate],
     queryFn: () => client.getOverview(teamId, reportingDate),

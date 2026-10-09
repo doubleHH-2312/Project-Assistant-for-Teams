@@ -3,14 +3,14 @@ import { useMutation } from "@tanstack/react-query";
 import type { WeeklyReport } from "@project-assistant/api-client";
 import { useState } from "react";
 import { useSession } from "../../app/session-context";
+import { mondayInTimeZone } from "../../app/team-calendar";
 import { WeeklyEditor } from "./WeeklyEditor";
 
-function monday(): string { const value = new Date(); const day = value.getDay() || 7; value.setDate(value.getDate() - day + 1); return value.toISOString().slice(0, 10); }
 export function MultiTeamWeeklyPage() {
-  const { client, session } = useSession();
+  const { client, session, team } = useSession();
   const eligible = session.teams.filter((team) => team.permissions.includes("GENERATE_MULTI_TEAM_WEEKLY"));
   const [selected, setSelected] = useState<string[]>([]);
-  const [weekStart, setWeekStart] = useState(monday());
+  const [weekStart, setWeekStart] = useState(() => mondayInTimeZone(team.timezone));
   const [report, setReport] = useState<WeeklyReport | null>(null);
   const generate = useMutation({ mutationFn: () => client.generateWeekly({ scope: "MULTI_TEAM", teamId: null, teamIds: selected, weekStart, subjectUserId: null }), onSuccess: setReport });
   function toggle(teamId: string) { setSelected((current) => current.includes(teamId) ? current.filter((id) => id !== teamId) : [...current, teamId]); }

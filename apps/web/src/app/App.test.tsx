@@ -61,6 +61,7 @@ function renderApp() {
 }
 
 afterEach(() => {
+  vi.useRealTimers();
   cleanup();
   vi.restoreAllMocks();
 });
@@ -83,6 +84,69 @@ describe("role-aware application shell", () => {
     expect(screen.getByRole("button", { name: "My weekly" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Team overview" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Multi-team weekly" })).not.toBeInTheDocument();
+  });
+
+  it("defaults the report date to the selected Team calendar date", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-08T17:30:00Z"));
+    vi.spyOn(ProjectAssistantClient.prototype, "getSession").mockResolvedValue(
+      session("MEMBER"),
+    );
+    vi.spyOn(ProjectAssistantClient.prototype, "listDailyOptions").mockResolvedValue({
+      projects: [{ id: "project-1", name: "Project One" }],
+      workItems: [
+        { id: "item-1", projectId: "project-1", code: "OPS-1", title: "Ship" },
+      ],
+    });
+
+    renderApp();
+    await vi.runAllTimersAsync();
+
+    expect(screen.getByLabelText("Report date")).toHaveValue("2026-10-09");
+  });
+
+  it("defaults weekly reports to Monday in the selected Team calendar", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-08T17:30:00Z"));
+    vi.spyOn(ProjectAssistantClient.prototype, "getSession").mockResolvedValue(
+      session("MEMBER"),
+    );
+    vi.spyOn(ProjectAssistantClient.prototype, "listDailyOptions").mockResolvedValue({
+      projects: [],
+      workItems: [],
+    });
+
+    renderApp();
+    await vi.runAllTimersAsync();
+    fireEvent.click(screen.getByRole("button", { name: "My weekly" }));
+
+    expect(screen.getByLabelText("Week starts")).toHaveValue("2026-10-05");
+  });
+
+  it("loads the Team overview for the selected Team calendar date", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-08T17:30:00Z"));
+    vi.spyOn(ProjectAssistantClient.prototype, "getSession").mockResolvedValue(
+      session("TECH_LEAD"),
+    );
+    vi.spyOn(ProjectAssistantClient.prototype, "listDailyOptions").mockResolvedValue({
+      projects: [],
+      workItems: [],
+    });
+    const getOverview = vi.spyOn(ProjectAssistantClient.prototype, "getOverview").mockResolvedValue({
+      reportingDate: "2026-10-09",
+      coverage: { submitted: 0, expected: 0, percentage: 0 },
+      statusCounts: {},
+      blockers: [],
+      missingReporters: [],
+    });
+
+    renderApp();
+    await vi.runAllTimersAsync();
+    fireEvent.click(screen.getByRole("button", { name: "Team overview" }));
+    await vi.runAllTimersAsync();
+
+    expect(getOverview).toHaveBeenCalledWith("team-ops", "2026-10-09");
   });
 
   it("adds lead actions without granting PM-only settings", async () => {
